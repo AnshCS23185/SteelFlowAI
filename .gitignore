@@ -8,7 +8,7 @@ node_modules/
 dist/
 
 # Environment
-.env
+# .env
 
 # IDE
 .vscode/
