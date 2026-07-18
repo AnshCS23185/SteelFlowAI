@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+load_dotenv(dotenv_path=env_path)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,3 +31,6 @@ def health():
     return {
         "status": "healthy"
     }
+
+from app.routes import dispatch
+app.include_router(dispatch.router)
