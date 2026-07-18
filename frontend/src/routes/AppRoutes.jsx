@@ -28,6 +28,7 @@ import ProjectDetails from '../modules/module1/pages/ProjectDetails';
 // Module 23 Pages
 import PlanningDashboard from '../modules/module23/planning/pages/PlanningDashboard';
 import ManufacturingDashboard from '../modules/module23/manufacturing/pages/ManufacturingDashboard';
+import InventoryDashboard from '../modules/module23/inventory/pages/InventoryDashboard';
 
 // Module 45 Pages
 import DispatchDashboard from '../modules/module45/dispatch/pages/DispatchDashboard';
@@ -44,6 +45,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     if (user.role === 'admin') return <Navigate to="/admin/projects" replace />;
     if (user.role === 'supervisor') return <Navigate to="/supervisor/projects" replace />;
+    if (user.role === 'inventory') return <Navigate to="/inventory/dashboard" replace />;
     if (user.role === 'client') return <Navigate to="/client/project" replace />;
     return <Navigate to="/login" replace />;
   }
@@ -64,6 +66,7 @@ export default function AppRoutes() {
             isAuthenticated ? (
               user.role === 'admin' ? <Navigate to="/admin/projects" replace /> :
               user.role === 'supervisor' ? <Navigate to="/supervisor/projects" replace /> :
+              user.role === 'inventory' ? <Navigate to="/inventory/dashboard" replace /> :
               <Navigate to="/client/project" replace />
             ) : (
               <LoginPage />
@@ -94,7 +97,29 @@ export default function AppRoutes() {
         }
       >
         <Route path="projects" element={<SupervisorProjectHub />} />
+        <Route path="dashboard" element={<InventoryDashboard defaultTab="dashboard" />} />
+        <Route path="inventory" element={<InventoryDashboard defaultTab="inventory" />} />
+        <Route path="reservations" element={<InventoryDashboard defaultTab="reservations" />} />
+        <Route path="requests" element={<InventoryDashboard defaultTab="requests" />} />
         <Route path="" element={<Navigate to="projects" replace />} />
+      </Route>
+
+      <Route
+        path="/inventory"
+        element={
+          <ProtectedRoute allowedRoles={['inventory']}>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="dashboard" element={<InventoryDashboard defaultTab="dashboard" />} />
+        <Route path="materials" element={<InventoryDashboard defaultTab="materials" />} />
+        <Route path="warehouses" element={<InventoryDashboard defaultTab="warehouses" />} />
+        <Route path="stock" element={<InventoryDashboard defaultTab="stock" />} />
+        <Route path="goods-receipts" element={<InventoryDashboard defaultTab="goods-receipts" />} />
+        <Route path="requests" element={<InventoryDashboard defaultTab="requests" />} />
+        <Route path="transactions" element={<InventoryDashboard defaultTab="transactions" />} />
+        <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
 
       <Route
@@ -137,6 +162,7 @@ export default function AppRoutes() {
           isAuthenticated ? (
             user.role === 'admin' ? <Navigate to="/admin/projects" replace /> :
             user.role === 'supervisor' ? <Navigate to="/supervisor/projects" replace /> :
+            user.role === 'inventory' ? <Navigate to="/inventory/dashboard" replace /> :
             <Navigate to="/client/project" replace />
           ) : (
             <Navigate to="/login" replace />
