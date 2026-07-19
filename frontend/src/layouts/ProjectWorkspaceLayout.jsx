@@ -40,6 +40,17 @@ export default function ProjectWorkspaceLayout() {
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(true);
 
+  const [availableProjects, setAvailableProjects] = useState([]);
+
+  useEffect(() => {
+    const allProjects = api.getProjects();
+    if (user?.role === 'admin') {
+      setAvailableProjects(allProjects);
+    } else if (user?.role === 'supervisor') {
+      setAvailableProjects(allProjects.filter(p => p.supervisorEmail === user.email || p.supervisorName === user.name));
+    }
+  }, [user]);
+
   useEffect(() => {
     const data = api.getProjectById(id);
     if (!data) {
@@ -54,12 +65,13 @@ export default function ProjectWorkspaceLayout() {
   const currentPath = location.pathname.split('/').pop();
   
   const menuItems = [
-    { name: 'Overview', path: 'overview', icon: ClipboardList },
-    { name: 'Project', path: 'module1', icon: Layers },
-    { name: 'Planning', path: 'planning', icon: Clock },
+    { name: 'Dashboard', path: 'dashboard', icon: LayoutGrid },
+    { name: 'Project Details', path: 'project-details', icon: ClipboardList },
+    { name: 'Inventory', path: 'inventory', icon: Package },
+    { name: 'Quality Control', path: 'quality-control', icon: ShieldCheck },
     { name: 'Manufacturing', path: 'manufacturing', icon: Activity },
-    { name: 'Dispatch', path: 'dispatch', icon: ShieldCheck },
-    { name: 'Transportation', path: 'transportation', icon: Truck },
+    { name: 'Dispatch', path: 'dispatch', icon: Truck },
+    { name: 'Transportation', path: 'transportation', icon: Layers },
     { name: 'Documents', path: 'documents', icon: FileText },
     { name: 'Insights', path: 'insights', icon: BarChart3 },
     { name: 'Settings', path: 'settings', icon: Settings }
@@ -89,9 +101,23 @@ export default function ProjectWorkspaceLayout() {
           
           <div className="h-4 w-px bg-border-base" />
           
-          <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">
-            Fabrication OS v2.6
-          </span>
+          {availableProjects.length > 0 ? (
+            <select
+              value={project.id}
+              onChange={(e) => navigate(`/project/${e.target.value}/${currentPath}`)}
+              className="text-[11px] font-bold bg-surface-base border border-border-base rounded px-2 py-1 text-text-primary outline-none focus:border-brand-orange cursor-pointer max-w-[200px] truncate"
+            >
+              {availableProjects.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">
+              Fabrication OS v2.6
+            </span>
+          )}
         </div>
 
         {/* Center: System Status Bar */}

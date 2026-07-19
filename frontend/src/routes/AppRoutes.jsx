@@ -8,7 +8,7 @@ import ProjectWorkspaceLayout from '../layouts/ProjectWorkspaceLayout';
 
 // Shared Components
 import LoginPage from '../modules/shared/components/LoginPage';
-import OverviewPage from '../modules/shared/components/OverviewPage';
+import DashboardPage from '../modules/shared/dashboard/DashboardPage';
 import DocumentsPage from '../modules/shared/components/DocumentsPage';
 import InsightsPage from '../modules/shared/components/InsightsPage';
 import SettingsPage from '../modules/shared/components/SettingsPage';
@@ -23,12 +23,13 @@ import SupervisorProjectHub from '../modules/supervisor/pages/SupervisorProjectH
 import ClientPortal from '../modules/client/pages/ClientPortal';
 
 // Module 1 Pages
-import ProjectDetails from '../modules/module1/pages/ProjectDetails';
+import ProjectDetailsPage from '../modules/module1/projectDetails/pages/ProjectDetailsPage';
 
 // Module 23 Pages
 import PlanningDashboard from '../modules/module23/planning/pages/PlanningDashboard';
 import ManufacturingDashboard from '../modules/module23/manufacturing/pages/ManufacturingDashboard';
 import InventoryDashboard from '../modules/module23/inventory/pages/InventoryDashboard';
+import QualityDashboard from '../modules/module23/qualityControl/pages/QualityDashboard';
 
 // Module 45 Pages
 import DispatchDashboard from '../modules/module45/dispatch/pages/DispatchDashboard';
@@ -97,10 +98,6 @@ export default function AppRoutes() {
         }
       >
         <Route path="projects" element={<SupervisorProjectHub />} />
-        <Route path="dashboard" element={<InventoryDashboard defaultTab="dashboard" />} />
-        <Route path="inventory" element={<InventoryDashboard defaultTab="inventory" />} />
-        <Route path="reservations" element={<InventoryDashboard defaultTab="reservations" />} />
-        <Route path="requests" element={<InventoryDashboard defaultTab="requests" />} />
         <Route path="" element={<Navigate to="projects" replace />} />
       </Route>
 
@@ -143,16 +140,18 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="overview" element={<OverviewPage />} />
-        <Route path="module1" element={<ProjectDetails />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="project-details" element={<ProjectDetailsPage />} />
         <Route path="planning" element={<PlanningDashboard />} />
         <Route path="manufacturing" element={<ManufacturingDashboard />} />
+        <Route path="inventory" element={<InventoryDashboard defaultTab="dashboard" />} />
+        <Route path="quality-control" element={<QualityDashboard />} />
         <Route path="dispatch" element={<DispatchDashboard />} />
         <Route path="transportation" element={<TransportationDashboard />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="insights" element={<InsightsPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="" element={<Navigate to="overview" replace />} />
+        <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
 
       {/* Wildcard Fallbacks */}

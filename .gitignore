@@ -1,14 +1,22 @@
 # Python
+.venv/
 venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual environment files
+.python-version
 
 # Node
 node_modules/
 dist/
+build/
 
-# Environment
-# .env
+# Environment Variables
+.env
+.env.*
+!.env.example
 
 # IDE
 .vscode/
@@ -16,6 +24,9 @@ dist/
 
 # Uploads
 uploads/
+
+# Logs
+*.log
 
 # OS
 .DS_Store

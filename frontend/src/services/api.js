@@ -11,11 +11,11 @@ import {
 
 // Helper to initialize localStorage
 const getOrInit = (key, defaultData) => {
-  const data = localStorage.getItem(`steelflow_${key}`);
+  const data = localStorage.getItem(`steelflow_v2_${key}`);
   if (data) {
     return JSON.parse(data);
   }
-  localStorage.setItem(`steelflow_${key}`, JSON.stringify(defaultData));
+  localStorage.setItem(`steelflow_v2_${key}`, JSON.stringify(defaultData));
   return defaultData;
 };
 
@@ -32,7 +32,7 @@ const state = {
 };
 
 const saveState = (key) => {
-  localStorage.setItem(`steelflow_${key}`, JSON.stringify(state[key]));
+  localStorage.setItem(`steelflow_v2_${key}`, JSON.stringify(state[key]));
 };
 
 export const api = {
