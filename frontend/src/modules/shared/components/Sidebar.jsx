@@ -29,11 +29,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   ];
 
   const supervisorLinks = [
-    { name: 'My Projects', path: '/supervisor/projects', icon: Layers },
-    { name: 'Inventory Dashboard', path: '/supervisor/dashboard', icon: LayoutGrid },
-    { name: 'Project Inventory', path: '/supervisor/inventory', icon: Package },
-    { name: 'Material Reservations', path: '/supervisor/reservations', icon: ClipboardList },
-    { name: 'Material Requests', path: '/supervisor/requests', icon: FileText }
+    { name: 'My Projects', path: '/supervisor/projects', icon: Layers }
   ];
 
   const clientLinks = [
