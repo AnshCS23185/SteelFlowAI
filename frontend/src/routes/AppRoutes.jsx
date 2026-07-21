@@ -139,7 +139,7 @@ export default function AppRoutes() {
         <Route path="project-details" element={<ProjectDetailsPage />} />
         <Route path="planning" element={<PlanningDashboard />} />
         <Route path="manufacturing" element={<ManufacturingDashboard />} />
-        <Route path="inventory" element={<InventoryDashboard defaultTab="dashboard" />} />
+        <Route path="inventory" element={<InventoryDashboard defaultTab="inventory" />} />
         <Route path="quality-control" element={<QualityDashboard />} />
         <Route path="dispatch" element={<DispatchDashboard />} />
         <Route path="transportation" element={<TransportationDashboard />} />
