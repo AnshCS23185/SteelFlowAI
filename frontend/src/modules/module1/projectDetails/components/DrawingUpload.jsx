@@ -1,6 +1,6 @@
 import { CheckCircle } from 'lucide-react';
 
-export default function DrawingUpload({ drawingsList, newDrawName, setNewDrawName, handleUploadDrawing }) {
+export default function DrawingUpload({ drawingsList, newDrawName, setNewDrawName, handleUploadDrawing, isUploading, fileInputRef }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 bg-surface-base border border-border-base rounded-lg overflow-hidden">
@@ -32,15 +32,17 @@ export default function DrawingUpload({ drawingsList, newDrawName, setNewDrawNam
             <input
               type="file"
               accept=".xlsx,.csv"
+              ref={fileInputRef}
               onChange={(e) => setNewDrawName(e.target.files[0])}
               className="w-full p-2 bg-surface-elevated border border-border-base rounded outline-none text-text-primary file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-brand-orange file:text-white hover:file:bg-brand-orange/90 cursor-pointer"
             />
           </div>
           <button
             type="submit"
-            className="w-full py-2.5 bg-brand-orange text-white hover:bg-brand-orange/90 text-xs font-semibold rounded cursor-pointer transition-colors"
+            disabled={isUploading}
+            className={`w-full py-2.5 bg-brand-orange text-white text-xs font-semibold rounded transition-colors ${isUploading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-brand-orange/90 cursor-pointer'}`}
           >
-            Upload and Parse List
+            {isUploading ? 'Uploading & Parsing...' : 'Upload and Parse List'}
           </button>
         </form>
       </div>

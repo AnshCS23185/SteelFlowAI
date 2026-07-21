@@ -11,7 +11,7 @@ if db_path not in sys.path:
     sys.path.append(db_path)
 
 from steelflow_db.core.db import get_db
-from steelflow_db.models.module1 import Project, ProjectAssignment, Client, User
+from steelflow_db.models.module1 import Project, ProjectAssignment, Client, User, Document, ShippingList, ShippingItem
 
 auth_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'shared_auth'))
 if auth_path not in sys.path:
@@ -159,4 +159,36 @@ def assign_user_to_project(
     db.add(new_assignment)
     db.commit()
     
-    return {"message": "User assigned to project successfully"}
+    return {"message": "Project assigned successfully"}
+
+@router.delete("/{project_id}")
+def delete_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(AppModule.MODULE1_PROJECTS, AccessLevel.FULL))
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Safe cascade cleanup
+    # 1. Delete shipping items belonging to shipping lists of this project
+    shipping_lists = db.query(ShippingList).filter(ShippingList.project_id == project.id).all()
+    shipping_list_ids = [sl.id for sl in shipping_lists]
+    if shipping_list_ids:
+        db.query(ShippingItem).filter(ShippingItem.shipping_list_id.in_(shipping_list_ids)).delete(synchronize_session=False)
+
+    # 2. Delete shipping lists
+    db.query(ShippingList).filter(ShippingList.project_id == project.id).delete(synchronize_session=False)
+
+    # 3. Delete documents
+    db.query(Document).filter(Document.project_id == project.id).delete(synchronize_session=False)
+
+    # 4. Delete project assignments
+    db.query(ProjectAssignment).filter(ProjectAssignment.project_id == project.id).delete(synchronize_session=False)
+
+    # 5. Finally, delete the project
+    db.delete(project)
+    db.commit()
+
+    return {"message": "Project deleted successfully"}

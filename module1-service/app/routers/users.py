@@ -9,7 +9,7 @@ if db_path not in sys.path:
     sys.path.append(db_path)
 
 from steelflow_db.core.db import get_db
-from steelflow_db.models.module1 import User, UserRole
+from steelflow_db.models.module1 import User, UserRole, ProjectAssignment
 
 auth_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'shared_auth'))
 if auth_path not in sys.path:
@@ -27,6 +27,12 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: str
+
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    email: EmailStr | None = None
+    password: str | None = None
+    role: str | None = None
 
 class UserResponse(BaseModel):
     id: str
@@ -82,3 +88,55 @@ def toggle_user_status(
     db.commit()
     db.refresh(target_user)
     return UserResponse(id=str(target_user.id), full_name=target_user.full_name, email=target_user.email, role=target_user.role.value if hasattr(target_user.role, 'value') else target_user.role, is_active=target_user.is_active)
+
+@router.put("/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: str,
+    user_in: UserUpdate,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(AppModule.MODULE1_PROJECTS, AccessLevel.FULL))
+):
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if user_in.email and user_in.email != target_user.email:
+        if db.query(User).filter(User.email == user_in.email).first():
+            raise HTTPException(status_code=400, detail="Email already taken")
+        target_user.email = user_in.email
+
+    if user_in.full_name is not None:
+        target_user.full_name = user_in.full_name
+        
+    if user_in.role is not None:
+        target_user.role = user_in.role
+        
+    if user_in.password:
+        target_user.hashed_password = pwd_context.hash(user_in.password)
+        
+    db.commit()
+    db.refresh(target_user)
+    return UserResponse(id=str(target_user.id), full_name=target_user.full_name, email=target_user.email, role=target_user.role.value if hasattr(target_user.role, 'value') else target_user.role, is_active=target_user.is_active)
+
+@router.delete("/{user_id}")
+def delete_user(
+    user_id: str,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(AppModule.MODULE1_PROJECTS, AccessLevel.FULL))
+):
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if target_user.email == 'admin@gmail.com':
+        raise HTTPException(status_code=403, detail="Cannot delete the primary administrator")
+        
+    if str(target_user.id) == user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+        
+    # Clean up project assignments
+    db.query(ProjectAssignment).filter(ProjectAssignment.user_id == target_user.id).delete()
+    
+    db.delete(target_user)
+    db.commit()
+    return {"message": "User deleted successfully"}

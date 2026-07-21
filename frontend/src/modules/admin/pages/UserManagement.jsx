@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
-import { Plus, Search, Shield, ShieldOff, X, Eye, EyeOff } from 'lucide-react';
+import { Plus, Search, Shield, ShieldOff, X, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UserManagement() {
@@ -10,6 +10,9 @@ export default function UserManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editUser, setEditUser] = useState(null);
 
   const [newUser, setNewUser] = useState({
     full_name: '',
@@ -57,6 +60,34 @@ export default function UserManagement() {
     } catch (err) {
       console.error("Failed to toggle user status", err);
       alert(err.response?.data?.detail || "Action failed.");
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm("Are you sure you want to permanently delete this user? All their project assignments will be removed.")) {
+      try {
+        await api.deleteUser(userId);
+        fetchUsers();
+      } catch (err) {
+        console.error("Failed to delete user", err);
+        alert(err.response?.data?.detail || "Failed to delete user.");
+      }
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await api.updateUser(editUser.id, editUser);
+      setShowEditModal(false);
+      fetchUsers();
+    } catch (err) {
+      console.error("Failed to update user", err);
+      setError(err.response?.data?.detail || "Failed to update user.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -139,17 +170,38 @@ export default function UserManagement() {
                 </td>
                 <td className="px-6 py-4 flex justify-end gap-3">
                   {user.role !== 'super_admin' && (
-                    <button
-                      onClick={() => handleToggleStatus(user.id)}
-                      title={user.is_active ? "Deactivate User" : "Reactivate User"}
-                      className={`p-1.5 rounded transition-all cursor-pointer ${
-                        user.is_active 
-                          ? 'text-red-500 hover:bg-red-500/10' 
-                          : 'text-emerald-500 hover:bg-emerald-500/10'
-                      }`}
-                    >
-                      {user.is_active ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditUser({ ...user, password: '' });
+                          setError(null);
+                          setShowPassword(false);
+                          setShowEditModal(true);
+                        }}
+                        title="Edit User"
+                        className="p-1.5 rounded transition-all cursor-pointer text-text-secondary hover:text-text-primary hover:bg-surface-elevated"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleStatus(user.id)}
+                        title={user.is_active ? "Deactivate User" : "Reactivate User"}
+                        className={`p-1.5 rounded transition-all cursor-pointer ${
+                          user.is_active 
+                            ? 'text-red-500 hover:bg-red-500/10' 
+                            : 'text-emerald-500 hover:bg-emerald-500/10'
+                        }`}
+                      >
+                        {user.is_active ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        title="Delete User"
+                        className="p-1.5 rounded transition-all cursor-pointer text-text-secondary hover:text-red-500 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>
@@ -252,17 +304,127 @@ export default function UserManagement() {
                   >
                     <option value="project_manager">Project Manager</option>
                     <option value="inventory_manager">Inventory Manager</option>
-                    <option value="client">Client Representative</option>
+                    <option value="client">Client</option>
                   </select>
                 </div>
 
-                <div className="pt-4 mt-auto">
+                <div className="pt-4">
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-2.5 bg-brand-orange text-white hover:bg-brand-orange/90 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold rounded shadow-sm transition-all cursor-pointer"
+                    className="w-full py-2.5 bg-brand-orange hover:bg-brand-orange/90 text-white text-xs font-bold rounded shadow-sm transition-all cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting ? 'Creating...' : 'Create Account'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Edit User Modal */}
+      <AnimatePresence>
+        {showEditModal && editUser && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black"
+              onClick={() => setShowEditModal(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, x: '100%' }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm bg-bg-base border-l border-border-base shadow-2xl p-8 flex flex-col overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-display font-bold text-text-primary">
+                  Edit User
+                </h2>
+                <button 
+                  onClick={() => setShowEditModal(false)}
+                  className="p-1.5 hover:bg-surface-elevated rounded-md transition-all cursor-pointer text-text-secondary"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {error && (
+                <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleEditSubmit} className="space-y-5 flex-1">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase">Full Name</label>
+                  <input
+                    required
+                    type="text"
+                    value={editUser.full_name || ''}
+                    onChange={(e) => setEditUser({...editUser, full_name: e.target.value})}
+                    className="w-full p-2.5 text-xs bg-surface-base border border-border-base rounded outline-none text-text-primary focus:border-brand-orange"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase">Email Address</label>
+                  <input
+                    required
+                    type="email"
+                    value={editUser.email}
+                    onChange={(e) => setEditUser({...editUser, email: e.target.value})}
+                    className="w-full p-2.5 text-xs bg-surface-base border border-border-base rounded outline-none text-text-primary focus:border-brand-orange"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase flex justify-between">
+                    <span>New Password</span>
+                    <span className="text-[9px] font-normal opacity-70">(Leave blank to keep current)</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={editUser.password || ''}
+                      onChange={(e) => setEditUser({...editUser, password: e.target.value})}
+                      placeholder="••••••••"
+                      className="w-full p-2.5 pr-10 text-xs bg-surface-base border border-border-base rounded outline-none text-text-primary focus:border-brand-orange"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase">Assign Role</label>
+                  <select
+                    value={editUser.role}
+                    onChange={(e) => setEditUser({...editUser, role: e.target.value})}
+                    className="w-full p-2.5 text-xs bg-surface-base border border-border-base rounded outline-none text-text-primary focus:border-brand-orange appearance-none"
+                  >
+                    <option value="project_manager">Project Manager</option>
+                    <option value="inventory_manager">Inventory Manager</option>
+                    <option value="client">Client</option>
+                  </select>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-2.5 bg-brand-orange hover:bg-brand-orange/90 text-white text-xs font-bold rounded shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>

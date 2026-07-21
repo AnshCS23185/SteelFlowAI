@@ -87,11 +87,8 @@ def verify_project_access(project_id: UUID, user: CurrentUser = Depends(get_curr
     """
     RLAC Dependency.
     Verifies that the user is explicitly assigned to the specific project in the database.
-    Super Admins bypass this check.
     """
-    if user.role == "super_admin":
-        return user
-        
+
     # Get the actual user object from DB using the ID
     db_user = db.query(User).filter(User.id == user.id).first()
     if not db_user:

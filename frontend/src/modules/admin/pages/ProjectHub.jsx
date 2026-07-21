@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import { api } from '../../../services/api';
-import { Plus, Search, Calendar, User, Compass, X } from 'lucide-react';
+import { Plus, Search, Calendar, User, Compass, X, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProjectHub() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState('');
@@ -94,6 +96,19 @@ export default function ProjectHub() {
     }
   };
 
+  const handleDeleteProject = async (e, projectId) => {
+    e.stopPropagation(); // prevent card click
+    if (window.confirm("Are you sure you want to permanently delete this project? All associated shipping lists and documents will also be removed.")) {
+      try {
+        await api.deleteProject(projectId);
+        setProjects(projects.filter(p => p.id !== projectId));
+      } catch (err) {
+        console.error("Failed to delete project", err);
+        alert(err.response?.data?.detail || "Failed to delete project.");
+      }
+    }
+  };
+
   const filteredProjects = projects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
                           p.clientName.toLowerCase().includes(search.toLowerCase());
@@ -114,7 +129,7 @@ export default function ProjectHub() {
             Overview Hub
           </p>
           <h1 className="text-3xl sm:text-4xl font-display font-bold tracking-tight text-text-primary">
-            Good Morning, Alex
+            Good Morning, {user?.name?.split(' ')[0] || 'User'}
           </h1>
           <p className="text-sm text-text-secondary max-w-xl">
             Monitor and coordinate structural fabrication logs, mill certificates, and shipping schedules across active projects.
@@ -195,7 +210,13 @@ export default function ProjectHub() {
         {filteredProjects.map((p) => (
           <div
             key={p.id}
-            onClick={() => navigate(`/project/${p.id}`)}
+            onClick={() => {
+              if (user?.role === 'super_admin') {
+                alert("Administrators are restricted to high-level hub oversight and user management. Only assigned managers can enter specific project workspaces.");
+              } else {
+                navigate(`/project/${p.id}`);
+              }
+            }}
             className="group block p-6 border border-border-base bg-surface-base rounded-lg transition-all duration-200 hover:scale-[1.01] hover:border-brand-orange/30 cursor-pointer flex flex-col justify-between h-64"
           >
             <div className="space-y-3">
@@ -207,9 +228,18 @@ export default function ProjectHub() {
                 }`}>
                   {p.status}
                 </span>
-                <span className="text-xs text-text-secondary font-medium flex items-center gap-1">
-                  <Calendar className="w-3 h-3" /> Due {p.deadline}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-text-secondary font-medium flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Due {p.deadline}
+                  </span>
+                  <button 
+                    onClick={(e) => handleDeleteProject(e, p.id)}
+                    className="p-1 rounded text-text-secondary hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                    title="Delete Project"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
               
               <h2 className="text-lg font-display font-bold text-text-primary group-hover:text-brand-orange transition-colors">

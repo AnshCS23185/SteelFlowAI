@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Calendar, ArrowRight } from 'lucide-react';
@@ -7,6 +7,7 @@ import { Calendar, ArrowRight } from 'lucide-react';
 export default function SupervisorProjectHub() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
@@ -23,8 +24,8 @@ export default function SupervisorProjectHub() {
         
         setProjects(mappedData);
 
-        // If only one project exists, redirect automatically
-        if (mappedData.length === 1) {
+        // If only one project exists, redirect automatically (unless explicitly skipping)
+        if (mappedData.length === 1 && !location.state?.skipRedirect) {
           navigate(`/project/${mappedData[0].id}`, { replace: true });
         }
       } catch (err) {
@@ -34,7 +35,7 @@ export default function SupervisorProjectHub() {
     fetchProjects();
   }, [user, navigate]);
 
-  if (projects.length === 1) {
+  if (projects.length === 1 && !location.state?.skipRedirect) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <p className="text-xs text-text-secondary animate-pulse">Loading assigned project workspace...</p>
