@@ -23,10 +23,6 @@ export default function SupervisorProjectHub() {
         
         setProjects(mappedData);
 
-        // If only one project exists, redirect automatically
-        if (mappedData.length === 1) {
-          navigate(`/project/${mappedData[0].id}`, { replace: true });
-        }
       } catch (err) {
         console.error("Failed to fetch assigned projects", err);
       }
@@ -34,13 +30,6 @@ export default function SupervisorProjectHub() {
     fetchProjects();
   }, [user, navigate]);
 
-  if (projects.length === 1) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-xs text-text-secondary animate-pulse">Loading assigned project workspace...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8 font-sans">
