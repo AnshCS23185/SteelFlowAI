@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Shield, Hammer, UserCheck, Package, Lock, Mail, AlertCircle, ArrowRight, Building2 } from 'lucide-react';
+import { Shield, Hammer, UserCheck, Package, Lock, Mail, AlertCircle, ArrowRight, Building2, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { api } from '../../../services/api';
 
@@ -11,6 +11,7 @@ export default function LoginPage() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -152,13 +153,20 @@ export default function LoginPage() {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6B7280]" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••"
                 required
-                className="w-full pl-9 pr-3 py-2 bg-[#FAFAFA] border border-gray-200 rounded text-xs text-[#111111] placeholder:text-gray-400 focus:outline-none focus:border-[#FF5A1F] transition-colors"
+                className="w-full pl-9 pr-9 py-2 bg-[#FAFAFA] border border-gray-200 rounded text-xs text-[#111111] placeholder:text-gray-400 focus:outline-none focus:border-[#FF5A1F] transition-colors"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#111111] transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
             </div>
           </div>
 

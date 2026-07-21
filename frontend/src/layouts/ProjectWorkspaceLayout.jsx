@@ -69,7 +69,7 @@ export default function ProjectWorkspaceLayout() {
           progress: 0,
           supervisorName: 'Assigned PM',
           clientName: 'Demo Client',
-          tonnage: 0,
+          tonnage: data.tonnage,
           deadline: '2027-01-01'
         });
       } catch (err) {
@@ -102,7 +102,7 @@ export default function ProjectWorkspaceLayout() {
 
   const handleBackToDashboard = () => {
     if (user?.role === 'super_admin') navigate('/admin/projects');
-    else if (user?.role === 'project_manager') navigate('/supervisor/projects');
+    else if (user?.role === 'project_manager') navigate('/supervisor/projects', { state: { skipRedirect: true } });
     else navigate('/client/project');
   };
 
