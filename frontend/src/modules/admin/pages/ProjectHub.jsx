@@ -10,14 +10,16 @@ export default function ProjectHub() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [availableUsers, setAvailableUsers] = useState([]);
   
   // Create Project State
   const [newProject, setNewProject] = useState({
     name: '',
     clientName: '',
-    clientEmail: '',
-    supervisorName: 'Marcus Vance',
-    supervisorEmail: 'marcus@steelflow.ai',
+    clientUserId: '',
+    supervisorId: '',
     tonnage: '',
     deadline: '',
     description: '',
@@ -25,38 +27,81 @@ export default function ProjectHub() {
   });
 
   useEffect(() => {
-    setProjects(api.getProjects());
+    const fetchData = async () => {
+      try {
+        const [projectsData, usersData] = await Promise.all([
+          api.getProjects(),
+          api.getUsers()
+        ]);
+        
+        const mappedData = projectsData.map(p => ({
+          ...p,
+          name: p.title,
+          clientName: p.client_id, // Wait, backend should return client name eventually, but for now ID
+          progress: 0,
+          supervisorName: 'Assigned PM',
+          tonnage: p.tonnage || 0
+        }));
+        setProjects(mappedData);
+        setAvailableUsers(usersData.filter(u => u.is_active));
+      } catch (err) {
+        console.error("Failed to load dashboard data", err);
+      }
+    };
+    fetchData();
   }, []);
 
-  const handleCreateProject = (e) => {
+  const handleCreateProject = async (e) => {
     e.preventDefault();
-    if (!newProject.name || !newProject.clientName || !newProject.deadline) return;
+    if (!newProject.name || !newProject.clientName) return;
 
-    api.createProject({
-      ...newProject,
-      tonnage: Number(newProject.tonnage) || 0
-    });
-    
-    // Refresh list and reset
-    setProjects(api.getProjects());
-    setShowCreateModal(false);
-    setNewProject({
-      name: '',
-      clientName: '',
-      clientEmail: '',
-      supervisorName: 'Marcus Vance',
-      supervisorEmail: 'marcus@steelflow.ai',
-      tonnage: '',
-      deadline: '',
-      description: '',
-      location: 'Zone A - Fabrication Bay 3'
-    });
+    setIsSubmitting(true);
+    try {
+      await api.createProject({
+        title: newProject.name,
+        description: newProject.description,
+        client_name: newProject.clientName,
+        tonnage: parseInt(newProject.tonnage) || 0,
+        supervisor_id: newProject.supervisorId || undefined,
+        client_user_id: newProject.clientUserId || undefined
+      });
+      
+      const updatedData = await api.getProjects();
+      const mappedData = updatedData.map(p => ({
+          ...p,
+          name: p.title,
+          clientName: p.client_id,
+          progress: 0,
+          supervisorName: 'Assigned PM',
+          tonnage: p.tonnage || 0
+      }));
+      setProjects(mappedData);
+      setShowCreateModal(false);
+      setNewProject({
+        name: '',
+        clientName: '',
+        clientUserId: '',
+        supervisorId: '',
+        tonnage: '',
+        deadline: '',
+        description: '',
+        location: 'Zone A - Fabrication Bay 3'
+      });
+    } catch (err) {
+      console.error("Failed to create project", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredProjects = projects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
                           p.clientName.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = filter === 'All' ? p.status !== 'Archived' : p.status === filter;
+    const matchesFilter = filter === 'All' 
+      ? p.status.toLowerCase() !== 'archived' 
+      : filter === 'Planning' 
+        ? (p.status.toLowerCase() === 'planning' || p.status.toLowerCase() === 'registered') 
+        : p.status.toLowerCase() === filter.toLowerCase();
     return matchesSearch && matchesFilter;
   });
 
@@ -90,7 +135,7 @@ export default function ProjectHub() {
         <div className="p-5 border border-border-base bg-surface-base rounded-lg">
           <p className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Active projects</p>
           <p className="text-2xl font-display font-bold text-text-primary mt-1">
-            {projects.filter(p => p.status === 'Active').length}
+            {projects.filter(p => p.status.toLowerCase() === 'active').length}
           </p>
         </div>
         <div className="p-5 border border-border-base bg-surface-base rounded-lg">
@@ -108,7 +153,7 @@ export default function ProjectHub() {
         <div className="p-5 border border-border-base bg-surface-base rounded-lg">
           <p className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Planning Phase</p>
           <p className="text-2xl font-display font-bold text-text-primary mt-1">
-            {projects.filter(p => p.status === 'Planning').length}
+            {projects.filter(p => p.status.toLowerCase() === 'planning' || p.status.toLowerCase() === 'registered').length}
           </p>
         </div>
       </div>
@@ -135,7 +180,7 @@ export default function ProjectHub() {
               onClick={() => setFilter(status)}
               className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 filter === status
-                  ? 'bg-text-primary text-white dark:bg-white dark:text-text-primary'
+                  ? 'bg-text-primary text-white dark:bg-white dark:text-[#111111]'
                   : 'bg-surface-base text-text-secondary border border-border-base hover:bg-surface-elevated'
               }`}
             >
@@ -250,28 +295,51 @@ export default function ProjectHub() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-text-secondary uppercase">Client Name</label>
+                      <label className="text-[10px] font-bold text-text-secondary uppercase">Client Company Name</label>
                       <input
                         required
                         type="text"
-                        placeholder="David Chen"
+                        placeholder="Apex Corp"
                         value={newProject.clientName}
                         onChange={(e) => setNewProject({...newProject, clientName: e.target.value})}
                         className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-text-secondary uppercase">Client Email</label>
-                      <input
-                        required
-                        type="email"
-                        placeholder="dchen@apex.com"
-                        value={newProject.clientEmail}
-                        onChange={(e) => setNewProject({...newProject, clientEmail: e.target.value})}
-                        className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-text-secondary uppercase">Project Manager</label>
+                        <select
+                          required
+                          value={newProject.supervisorId}
+                          onChange={(e) => setNewProject({...newProject, supervisorId: e.target.value})}
+                          className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
+                        >
+                          <option value="">Select Project Manager...</option>
+                          {availableUsers
+                            .filter(u => u.role === 'project_manager')
+                            .map(u => (
+                              <option key={u.id} value={u.id}>{u.full_name ? `${u.full_name} (${u.email})` : u.email}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-text-secondary uppercase">Client Representative</label>
+                        <select
+                          required
+                          value={newProject.clientUserId}
+                          onChange={(e) => setNewProject({...newProject, clientUserId: e.target.value})}
+                          className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
+                        >
+                          <option value="">Select Client User...</option>
+                          {availableUsers
+                            .filter(u => u.role === 'client')
+                            .map(u => (
+                              <option key={u.id} value={u.id}>{u.full_name ? `${u.full_name} (${u.email})` : u.email}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
 
@@ -312,9 +380,10 @@ export default function ProjectHub() {
                   <div className="flex gap-3 pt-4">
                     <button
                       type="submit"
-                      className="flex-1 py-3 bg-brand-orange text-white hover:bg-brand-orange/90 text-xs font-semibold rounded-md shadow-sm transition-all cursor-pointer"
+                      disabled={isSubmitting}
+                      className="flex-1 py-3 bg-brand-orange text-white hover:bg-brand-orange/90 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold rounded-md shadow-sm transition-all cursor-pointer"
                     >
-                      Save Project
+                      {isSubmitting ? 'Saving...' : 'Save Project'}
                     </button>
                     <button
                       type="button"

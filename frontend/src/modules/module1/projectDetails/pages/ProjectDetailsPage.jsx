@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import ProjectSpecifications from '../components/ProjectSpecifications';
 import DrawingUpload from '../components/DrawingUpload';
 import ProjectTeam from '../components/ProjectTeam';
+import { api } from '../../../../services/api';
 
 export default function ProjectDetailsPage() {
   const { project } = useOutletContext();
@@ -12,31 +13,57 @@ export default function ProjectDetailsPage() {
   const [clientName, setClientName] = useState(project?.clientName || '');
   const [clientEmail, setClientEmail] = useState(project?.clientEmail || '');
   
-  const [drawingsList, setDrawingsList] = useState([
-    { id: '1', docNo: 'SF-APX-DET-001', name: 'Anchor Bolt Layout Plan.pdf', size: '4.8 MB', date: '2026-06-15' },
-    { id: '2', docNo: 'SF-APX-DET-002', name: 'Column Column Base Splice Welding.pdf', size: '8.2 MB', date: '2026-07-01' }
-  ]);
+  const [drawingsList, setDrawingsList] = useState([]);
   const [newDrawName, setNewDrawName] = useState('');
+
+  useEffect(() => {
+    const fetchShippingLists = async () => {
+      if (project?.id) {
+        try {
+          const lists = await api.getShippingLists(project.id);
+          setDrawingsList(lists.map(list => ({
+            id: list.id,
+            docNo: list.id.substring(0, 8),
+            name: list.original_filename,
+            size: 'N/A', // We don't store file size yet
+            date: new Date(list.created_at || Date.now()).toISOString().split('T')[0]
+          })));
+        } catch (err) {
+          console.error("Failed to fetch shipping lists", err);
+        }
+      }
+    };
+    fetchShippingLists();
+  }, [project?.id]);
 
   const handleSaveDetails = (e) => {
     e.preventDefault();
     alert('Project configuration details updated successfully.');
   };
 
-  const handleUploadDrawing = (e) => {
+  const handleUploadDrawing = async (e) => {
     e.preventDefault();
-    if (!newDrawName) return;
-    setDrawingsList([
-      ...drawingsList,
-      {
-        id: String(drawingsList.length + 1),
-        docNo: `SF-APX-DET-00${drawingsList.length + 1}`,
-        name: newDrawName,
-        size: '2.5 MB',
-        date: new Date().toISOString().split('T')[0]
-      }
-    ]);
-    setNewDrawName('');
+    if (!newDrawName || !project?.id) return;
+    
+    try {
+      const response = await api.uploadShippingList(project.id, newDrawName);
+      
+      setDrawingsList([
+        {
+          id: response.id,
+          docNo: response.id.substring(0, 8),
+          name: response.original_filename,
+          size: 'Unknown',
+          date: new Date(response.created_at || Date.now()).toISOString().split('T')[0]
+        },
+        ...drawingsList
+      ]);
+      setNewDrawName(null);
+      alert('Shipping list parsed and items loaded into inventory pipeline successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to upload and parse shipping list. Ensure it is a valid Excel/CSV format.');
+    }
   };
 
   const subTabs = ['Details', 'Drawings & Shipping List', 'Stakeholders'];

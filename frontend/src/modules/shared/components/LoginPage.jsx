@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Shield, Hammer, UserCheck, Package, Lock, Mail, AlertCircle, ArrowRight, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { api } from '../../../services/api';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -15,7 +16,7 @@ export default function LoginPage() {
 
   const demoAccounts = [
     {
-      role: 'admin',
+      role: 'super_admin',
       name: 'Administrator',
       email: 'admin@gmail.com',
       password: '1234',
@@ -24,22 +25,22 @@ export default function LoginPage() {
       icon: Shield
     },
     {
-      role: 'inventory',
+      role: 'project_manager',
+      name: 'Project Manager',
+      email: 'supervisor@gmail.com',
+      password: '1234',
+      title: 'Project Manager',
+      avatar: 'PM',
+      icon: Hammer
+    },
+    {
+      role: 'inventory_manager',
       name: 'Inventory Manager',
       email: 'inventory@gmail.com',
       password: '1234',
       title: 'Inventory Manager',
       avatar: 'IM',
       icon: Package
-    },
-    {
-      role: 'supervisor',
-      name: 'Production Supervisor',
-      email: 'supervisor@gmail.com',
-      password: '1234',
-      title: 'Production Supervisor',
-      avatar: 'PS',
-      icon: Hammer
     },
     {
       role: 'client',
@@ -52,41 +53,46 @@ export default function LoginPage() {
     }
   ];
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      const account = demoAccounts.find(
-        (acc) => acc.email.toLowerCase() === email.trim().toLowerCase() && acc.password === password
-      );
+    try {
+      // Use the actual API for authentication!
+      const response = await api.login(email.trim(), password);
+      
+      const { access_token, user: apiUser } = response;
+      localStorage.setItem('token', access_token);
 
-      if (account) {
-        const userData = {
-          name: account.name,
-          email: account.email,
-          role: account.role,
-          title: account.title,
-          avatar: account.avatar
-        };
-        
-        login(userData);
+      const account = demoAccounts.find((acc) => acc.role === apiUser.role) || demoAccounts[3]; // Fallback to client if unknown
+      
+      const userData = {
+        id: apiUser.id,
+        name: account.name, // The backend doesn't return names yet, so we'll mock them
+        email: apiUser.email,
+        role: apiUser.role,
+        title: account.title,
+        avatar: account.avatar
+      };
+      
+      login(userData);
 
-        if (account.role === 'admin') {
-          navigate('/admin/projects');
-        } else if (account.role === 'inventory') {
-          navigate('/inventory/dashboard');
-        } else if (account.role === 'supervisor') {
-          navigate('/supervisor/dashboard');
-        } else if (account.role === 'client') {
-          navigate('/client/project');
-        }
+      if (userData.role === 'super_admin') {
+        navigate('/admin/projects');
+      } else if (userData.role === 'inventory_manager') {
+        navigate('/inventory/dashboard');
+      } else if (userData.role === 'project_manager') {
+        navigate('/supervisor/projects');
       } else {
-        setError('Invalid email or password.');
+        navigate('/client/project');
       }
+    } catch (err) {
+      console.error(err);
+      setError('Invalid email or password.');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const fillCredentials = (acc) => {

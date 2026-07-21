@@ -1,15 +1,14 @@
+import axiosInstance from './axios';
 import {
-  defaultProjects,
   defaultInventory,
   defaultProduction,
   defaultTransportation,
-  defaultDocuments,
   defaultDailyProgress,
   defaultIssues,
   defaultPhotos
 } from '../utils/mockData';
 
-// Helper to initialize localStorage
+// Helper to initialize localStorage for mocked modules
 const getOrInit = (key, defaultData) => {
   const data = localStorage.getItem(`steelflow_v2_${key}`);
   if (data) {
@@ -19,13 +18,10 @@ const getOrInit = (key, defaultData) => {
   return defaultData;
 };
 
-// State initialized reactively from localStorage
 const state = {
-  projects: getOrInit('projects', defaultProjects),
   inventory: getOrInit('inventory', defaultInventory),
   production: getOrInit('production', defaultProduction),
   transportation: getOrInit('transportation', defaultTransportation),
-  documents: getOrInit('documents', defaultDocuments),
   dailyProgress: getOrInit('dailyProgress', defaultDailyProgress),
   issues: getOrInit('issues', defaultIssues),
   photos: getOrInit('photos', defaultPhotos)
@@ -36,137 +32,84 @@ const saveState = (key) => {
 };
 
 export const api = {
+  // Auth
+  login: async (username, password) => {
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+    const response = await axiosInstance.post('/auth/login', formData, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    return response.data;
+  },
+
+  // Users
+  getUsers: async () => {
+    const response = await axiosInstance.get('/users/');
+    return response.data;
+  },
+
+  createUser: async (userData) => {
+    const response = await axiosInstance.post('/users/', userData);
+    return response.data;
+  },
+
+  toggleUserStatus: async (userId) => {
+    const response = await axiosInstance.post(`/users/${userId}/toggle-status`);
+    return response.data;
+  },
+
   // Projects
-  getProjects: () => {
-    return [...state.projects];
+  getProjects: async () => {
+    const response = await axiosInstance.get('/projects/');
+    return response.data;
   },
   
-  getProjectById: (id) => {
-    return state.projects.find(p => p.id === id) || null;
+  getProjectById: async (id) => {
+    const response = await axiosInstance.get(`/projects/${id}`);
+    return response.data;
   },
 
-  createProject: (projectData) => {
-    const newProject = {
-      id: String(state.projects.length + 1),
-      progress: 0,
-      status: 'Active',
-      phases: [
-        { id: 'p1', name: 'Detailing & Shop Drawings', progress: 0, status: 'Active' },
-        { id: 'p2', name: 'Raw Material Procurement', progress: 0, status: 'Planning' },
-        { id: 'p3', name: 'Cutting & Drilling', progress: 0, status: 'Planning' },
-        { id: 'p4', name: 'Assembly & Welding', progress: 0, status: 'Planning' },
-        { id: 'p5', name: 'QA Inspection & NDT', progress: 0, status: 'Planning' },
-        { id: 'p6', name: 'Blasting & Painting', progress: 0, status: 'Planning' },
-        { id: 'p7', name: 'Dispatch & Assembly on Site', progress: 0, status: 'Planning' }
-      ],
-      ...projectData
-    };
-    state.projects.push(newProject);
-    saveState('projects');
-
-    // Init associated arrays
-    state.inventory[newProject.id] = [];
-    state.production[newProject.id] = [];
-    state.transportation[newProject.id] = [];
-    state.documents[newProject.id] = [];
-    state.dailyProgress[newProject.id] = [];
-    state.issues[newProject.id] = [];
-    state.photos[newProject.id] = [];
-
-    saveState('inventory');
-    saveState('production');
-    saveState('transportation');
-    saveState('documents');
-    saveState('dailyProgress');
-    saveState('issues');
-    saveState('photos');
-
-    return newProject;
+  createProject: async (projectData) => {
+    const response = await axiosInstance.post('/projects/', projectData);
+    return response.data;
   },
 
-  updateProject: (id, projectUpdates) => {
-    const index = state.projects.findIndex(p => p.id === id);
-    if (index !== -1) {
-      state.projects[index] = { ...state.projects[index], ...projectUpdates };
-      saveState('projects');
-      return state.projects[index];
-    }
-    return null;
-  },
-
-  archiveProject: (id) => {
-    return api.updateProject(id, { status: 'Archived' });
-  },
-
-  // Inventory
-  getInventory: (projectId) => {
-    return state.inventory[projectId] || [];
-  },
-
-  updateInventoryItem: (projectId, itemId, updates) => {
-    const list = state.inventory[projectId] || [];
-    const index = list.findIndex(item => item.id === itemId);
-    if (index !== -1) {
-      list[index] = { ...list[index], ...updates };
-      state.inventory[projectId] = list;
-      saveState('inventory');
-      return list[index];
-    }
-    return null;
-  },
-
-  // Production
-  getProduction: (projectId) => {
-    return state.production[projectId] || [];
-  },
-
-  updateProductionItem: (projectId, itemId, updates) => {
-    const list = state.production[projectId] || [];
-    const index = list.findIndex(item => item.id === itemId);
-    if (index !== -1) {
-      list[index] = { ...list[index], ...updates };
-      state.production[projectId] = list;
-      saveState('production');
-      return list[index];
-    }
-    return null;
-  },
-
-  // Transportation
-  getTransportation: (projectId) => {
-    return state.transportation[projectId] || [];
-  },
-
-  addTransportationLoad: (projectId, loadData) => {
-    const list = state.transportation[projectId] || [];
-    const newLoad = {
-      id: `t_${Date.now()}`,
-      status: 'Scheduled',
-      dispatchDate: new Date().toISOString().split('T')[0],
-      ...loadData
-    };
-    list.push(newLoad);
-    state.transportation[projectId] = list;
-    saveState('transportation');
-    return newLoad;
+  assignUser: async (projectId, userId, role) => {
+    const response = await axiosInstance.post(`/projects/${projectId}/assign`, {
+      user_id: userId,
+      assignment_role: role
+    });
+    return response.data;
   },
 
   // Documents
-  getDocuments: (projectId) => {
-    return state.documents[projectId] || [];
+  getDocuments: async (projectId) => {
+    const response = await axiosInstance.get(`/projects/${projectId}/documents`);
+    return response.data;
   },
 
-  uploadDocument: (projectId, docData) => {
-    const list = state.documents[projectId] || [];
-    const newDoc = {
-      id: `d_${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      ...docData
-    };
-    list.push(newDoc);
-    state.documents[projectId] = list;
-    saveState('documents');
-    return newDoc;
+  uploadDocument: async (projectId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axiosInstance.post(`/projects/${projectId}/documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  uploadShippingList: async (projectId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axiosInstance.post(`/projects/${projectId}/shipping-lists`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  getShippingLists: async (projectId) => {
+    const response = await axiosInstance.get(`/projects/${projectId}/shipping-lists`);
+    return response.data;
   },
 
   // Daily Progress

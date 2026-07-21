@@ -29,19 +29,41 @@ export default function ClientPortal() {
   const [supportSubmitted, setSupportSubmitted] = useState(false);
 
   useEffect(() => {
-    // Find client's project (matching client's email/name)
-    const allProjects = api.getProjects();
-    const clientProj = allProjects.find(
-      p => p.clientEmail === user?.email || p.clientName === user?.name || p.id === '1' // Fallback to project 1 for demo
-    );
+    const fetchClientData = async () => {
+      try {
+        const allProjects = await api.getProjects();
+        const clientProj = allProjects[0]; // For demo, assume client only has 1 or we pick first
 
-    if (clientProj) {
-      setProject(clientProj);
-      setInventory(api.getInventory(clientProj.id));
-      setTransportation(api.getTransportation(clientProj.id));
-      setDocuments(api.getDocuments(clientProj.id));
-      setPhotos(api.getPhotos(clientProj.id));
-    }
+        if (clientProj) {
+          const mappedProj = {
+            ...clientProj,
+            name: clientProj.title,
+            progress: 0,
+            supervisorName: "Assigned PM",
+            deadline: "2027-01-01",
+            tonnage: 0
+          };
+          setProject(mappedProj);
+          
+          setInventory(api.getInventory(clientProj.id));
+          setTransportation(api.getTransportation(clientProj.id));
+          setPhotos(api.getPhotos(clientProj.id));
+
+          // Fetch real documents from GridFS
+          const docs = await api.getDocuments(clientProj.id);
+          setDocuments(docs.map(d => ({
+            id: d.id,
+            name: d.file_name,
+            type: "Document",
+            size: "Unknown",
+            date: "Today"
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to fetch client portal data", err);
+      }
+    };
+    fetchClientData();
   }, [user]);
 
   if (!project) {

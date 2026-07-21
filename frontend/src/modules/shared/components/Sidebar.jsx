@@ -10,7 +10,8 @@ import {
   Home,
   FileText,
   ClipboardList,
-  Activity
+  Activity,
+  User
 } from 'lucide-react';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
@@ -26,6 +27,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   const adminLinks = [
     { name: 'Project Hub', path: '/admin/projects', icon: Briefcase },
+    { name: 'Team & Users', path: '/admin/users', icon: User },
   ];
 
   const supervisorLinks = [
@@ -47,10 +49,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   ];
 
   let links = [];
-  if (user.role === 'admin') links = adminLinks;
-  else if (user.role === 'supervisor') links = supervisorLinks;
+  if (user.role === 'super_admin') links = adminLinks;
+  else if (user.role === 'project_manager') links = supervisorLinks;
   else if (user.role === 'client') links = clientLinks;
-  else if (user.role === 'inventory') links = inventoryLinks;
+  else if (user.role === 'inventory_manager') links = inventoryLinks;
 
   return (
     <>
