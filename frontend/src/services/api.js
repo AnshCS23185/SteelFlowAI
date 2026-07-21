@@ -59,6 +59,16 @@ export const api = {
     return response.data;
   },
 
+  updateUser: async (userId, userData) => {
+    const response = await axiosInstance.put(`/users/${userId}`, userData);
+    return response.data;
+  },
+
+  deleteUser: async (userId) => {
+    const response = await axiosInstance.delete(`/users/${userId}`);
+    return response.data;
+  },
+
   // Projects
   getProjects: async () => {
     const response = await axiosInstance.get('/projects/');
@@ -72,6 +82,11 @@ export const api = {
 
   createProject: async (projectData) => {
     const response = await axiosInstance.post('/projects/', projectData);
+    return response.data;
+  },
+
+  deleteProject: async (projectId) => {
+    const response = await axiosInstance.delete(`/projects/${projectId}`);
     return response.data;
   },
 

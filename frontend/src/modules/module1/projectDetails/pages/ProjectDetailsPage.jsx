@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import ProjectSpecifications from '../components/ProjectSpecifications';
 import DrawingUpload from '../components/DrawingUpload';
@@ -14,7 +14,9 @@ export default function ProjectDetailsPage() {
   const [clientEmail, setClientEmail] = useState(project?.clientEmail || '');
   
   const [drawingsList, setDrawingsList] = useState([]);
-  const [newDrawName, setNewDrawName] = useState('');
+  const [newDrawName, setNewDrawName] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchShippingLists = async () => {
@@ -45,6 +47,7 @@ export default function ProjectDetailsPage() {
     e.preventDefault();
     if (!newDrawName || !project?.id) return;
     
+    setIsUploading(true);
     try {
       const response = await api.uploadShippingList(project.id, newDrawName);
       
@@ -59,10 +62,15 @@ export default function ProjectDetailsPage() {
         ...drawingsList
       ]);
       setNewDrawName(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       alert('Shipping list parsed and items loaded into inventory pipeline successfully!');
     } catch (err) {
       console.error(err);
       alert('Failed to upload and parse shipping list. Ensure it is a valid Excel/CSV format.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -95,7 +103,9 @@ export default function ProjectDetailsPage() {
           drawingsList={drawingsList} 
           newDrawName={newDrawName} 
           setNewDrawName={setNewDrawName} 
-          handleUploadDrawing={handleUploadDrawing} 
+          handleUploadDrawing={handleUploadDrawing}
+          isUploading={isUploading}
+          fileInputRef={fileInputRef}
         />
       )}
 
