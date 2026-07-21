@@ -25,23 +25,22 @@ export default function DrawingUpload({ drawingsList, newDrawName, setNewDrawNam
       </div>
 
       <div className="bg-surface-base border border-border-base p-6 rounded-lg self-start">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-secondary mb-4 font-display">Register Drawing / Detailing Sheet</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-text-secondary mb-4 font-display">Upload Shipping List (Excel/CSV)</h3>
         <form onSubmit={handleUploadDrawing} className="space-y-4 text-xs">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-text-secondary uppercase">Drawing Name</label>
+            <label className="text-[10px] font-bold text-text-secondary uppercase">Select File</label>
             <input
-              type="text"
-              placeholder="e.g. Column Section Details.pdf"
-              value={newDrawName}
-              onChange={(e) => setNewDrawName(e.target.value)}
-              className="w-full p-3 bg-surface-elevated border border-border-base rounded outline-none text-text-primary"
+              type="file"
+              accept=".xlsx,.csv"
+              onChange={(e) => setNewDrawName(e.target.files[0])}
+              className="w-full p-2 bg-surface-elevated border border-border-base rounded outline-none text-text-primary file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-brand-orange file:text-white hover:file:bg-brand-orange/90 cursor-pointer"
             />
           </div>
           <button
             type="submit"
             className="w-full py-2.5 bg-brand-orange text-white hover:bg-brand-orange/90 text-xs font-semibold rounded cursor-pointer transition-colors"
           >
-            Upload IFC PDF File
+            Upload and Parse List
           </button>
         </form>
       </div>

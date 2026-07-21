@@ -10,18 +10,28 @@ export default function SupervisorProjectHub() {
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
-    // Filter projects assigned to this supervisor
-    const allProjects = api.getProjects();
-    const supervisorProjects = allProjects.filter(
-      p => p.supervisorEmail === user?.email || p.supervisorName === user?.name
-    );
-    
-    setProjects(supervisorProjects);
+    const fetchProjects = async () => {
+      try {
+        // RLAC: The backend automatically filters this list based on the user's role!
+        const data = await api.getProjects();
+        const mappedData = data.map(p => ({
+          ...p,
+          name: p.title,
+          description: p.description,
+          deadline: '2027-01-01', // Dummy until we add deadline to DB
+        }));
+        
+        setProjects(mappedData);
 
-    // If only one project exists, redirect automatically
-    if (supervisorProjects.length === 1) {
-      navigate(`/project/${supervisorProjects[0].id}`, { replace: true });
-    }
+        // If only one project exists, redirect automatically
+        if (mappedData.length === 1) {
+          navigate(`/project/${mappedData[0].id}`, { replace: true });
+        }
+      } catch (err) {
+        console.error("Failed to fetch assigned projects", err);
+      }
+    };
+    fetchProjects();
   }, [user, navigate]);
 
   if (projects.length === 1) {

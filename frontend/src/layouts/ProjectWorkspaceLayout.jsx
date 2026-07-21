@@ -34,7 +34,7 @@ export default function ProjectWorkspaceLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toggleTheme, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   
   const [project, setProject] = useState(null);
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
@@ -43,27 +43,50 @@ export default function ProjectWorkspaceLayout() {
   const [availableProjects, setAvailableProjects] = useState([]);
 
   useEffect(() => {
-    const allProjects = api.getProjects();
-    if (user?.role === 'admin') {
-      setAvailableProjects(allProjects);
-    } else if (user?.role === 'supervisor') {
-      setAvailableProjects(allProjects.filter(p => p.supervisorEmail === user.email || p.supervisorName === user.name));
-    }
+    const fetchAvailable = async () => {
+      try {
+        const allProjects = await api.getProjects();
+        // The backend RLAC already filters projects, so we just use allProjects directly
+        setAvailableProjects(allProjects.map(p => ({ ...p, name: p.title })));
+      } catch (err) {
+        console.error("Failed to load available projects", err);
+      }
+    };
+    fetchAvailable();
   }, [user]);
 
   useEffect(() => {
-    const data = api.getProjectById(id);
-    if (!data) {
-      navigate('/login');
-      return;
-    }
-    setProject(data);
+    const fetchProject = async () => {
+      try {
+        const data = await api.getProjectById(id);
+        if (!data) {
+          navigate('/login');
+          return;
+        }
+        setProject({
+          ...data,
+          name: data.title,
+          progress: 0,
+          supervisorName: 'Assigned PM',
+          clientName: 'Demo Client',
+          tonnage: 0,
+          deadline: '2027-01-01'
+        });
+      } catch (err) {
+        console.error("Failed to fetch project by id", err);
+        navigate('/login');
+      }
+    };
+    fetchProject();
   }, [id, navigate]);
 
   if (!project) return null;
 
   const currentPath = location.pathname.split('/').pop();
   
+  // Here we use the PBAC hasPermission checks if we wanted to hide specific sidebar options.
+  // For now, we will render the ones that are broadly acceptable, but in a real app
+  // we would check against APP_MODULE string constants.
   const menuItems = [
     { name: 'Dashboard', path: 'dashboard', icon: LayoutGrid },
     { name: 'Project Details', path: 'project-details', icon: ClipboardList },
@@ -78,8 +101,8 @@ export default function ProjectWorkspaceLayout() {
   ];
 
   const handleBackToDashboard = () => {
-    if (user?.role === 'admin') navigate('/admin/projects');
-    else if (user?.role === 'supervisor') navigate('/supervisor/projects');
+    if (user?.role === 'super_admin') navigate('/admin/projects');
+    else if (user?.role === 'project_manager') navigate('/supervisor/projects');
     else navigate('/client/project');
   };
 

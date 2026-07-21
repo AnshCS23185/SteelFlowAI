@@ -15,6 +15,7 @@ import SettingsPage from '../modules/shared/components/SettingsPage';
 
 // Admin Module Pages
 import ProjectHub from '../modules/admin/pages/ProjectHub';
+import UserManagement from '../modules/admin/pages/UserManagement';
 
 // Supervisor Module Pages
 import SupervisorProjectHub from '../modules/supervisor/pages/SupervisorProjectHub';
@@ -44,9 +45,9 @@ function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    if (user.role === 'admin') return <Navigate to="/admin/projects" replace />;
-    if (user.role === 'supervisor') return <Navigate to="/supervisor/projects" replace />;
-    if (user.role === 'inventory') return <Navigate to="/inventory/dashboard" replace />;
+    if (user.role === 'super_admin') return <Navigate to="/admin/projects" replace />;
+    if (user.role === 'project_manager') return <Navigate to="/supervisor/projects" replace />;
+    if (user.role === 'inventory_manager') return <Navigate to="/inventory/dashboard" replace />;
     if (user.role === 'client') return <Navigate to="/client/project" replace />;
     return <Navigate to="/login" replace />;
   }
@@ -65,9 +66,9 @@ export default function AppRoutes() {
           path="/login" 
           element={
             isAuthenticated ? (
-              user.role === 'admin' ? <Navigate to="/admin/projects" replace /> :
-              user.role === 'supervisor' ? <Navigate to="/supervisor/projects" replace /> :
-              user.role === 'inventory' ? <Navigate to="/inventory/dashboard" replace /> :
+              user.role === 'super_admin' ? <Navigate to="/admin/projects" replace /> :
+              user.role === 'project_manager' ? <Navigate to="/supervisor/projects" replace /> :
+              user.role === 'inventory_manager' ? <Navigate to="/inventory/dashboard" replace /> :
               <Navigate to="/client/project" replace />
             ) : (
               <LoginPage />
@@ -77,22 +78,16 @@ export default function AppRoutes() {
       </Route>
 
       {/* High-Level RBAC Dashboard Routes */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
+      <Route path="/admin" element={<ProtectedRoute allowedRoles={['super_admin']}><DashboardLayout /></ProtectedRoute>}>
         <Route path="projects" element={<ProjectHub />} />
+        <Route path="users" element={<UserManagement />} />
         <Route path="" element={<Navigate to="projects" replace />} />
       </Route>
 
       <Route
         path="/supervisor"
         element={
-          <ProtectedRoute allowedRoles={['supervisor']}>
+          <ProtectedRoute allowedRoles={['project_manager']}>
             <DashboardLayout />
           </ProtectedRoute>
         }
@@ -104,7 +99,7 @@ export default function AppRoutes() {
       <Route
         path="/inventory"
         element={
-          <ProtectedRoute allowedRoles={['inventory']}>
+          <ProtectedRoute allowedRoles={['inventory_manager']}>
             <DashboardLayout />
           </ProtectedRoute>
         }
@@ -135,7 +130,7 @@ export default function AppRoutes() {
       <Route
         path="/project/:id"
         element={
-          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'project_manager', 'client']}>
             <ProjectWorkspaceLayout />
           </ProtectedRoute>
         }
@@ -159,9 +154,9 @@ export default function AppRoutes() {
         path="*" 
         element={
           isAuthenticated ? (
-            user.role === 'admin' ? <Navigate to="/admin/projects" replace /> :
-            user.role === 'supervisor' ? <Navigate to="/supervisor/projects" replace /> :
-            user.role === 'inventory' ? <Navigate to="/inventory/dashboard" replace /> :
+            user.role === 'super_admin' ? <Navigate to="/admin/projects" replace /> :
+            user.role === 'project_manager' ? <Navigate to="/supervisor/projects" replace /> :
+            user.role === 'inventory_manager' ? <Navigate to="/inventory/dashboard" replace /> :
             <Navigate to="/client/project" replace />
           ) : (
             <Navigate to="/login" replace />

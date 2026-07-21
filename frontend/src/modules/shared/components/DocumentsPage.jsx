@@ -8,7 +8,23 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState([]);
 
   useEffect(() => {
-    setDocuments(api.getDocuments(id));
+    const fetchDocs = async () => {
+      try {
+        const docs = await api.getDocuments(id);
+        const mappedDocs = docs.map(d => ({
+          id: d.id,
+          name: d.file_name,
+          type: "Document",
+          size: "Unknown",
+          date: "Today",
+          uploadedBy: "System"
+        }));
+        setDocuments(mappedDocs);
+      } catch (err) {
+        console.error("Failed to load documents", err);
+      }
+    };
+    fetchDocs();
   }, [id]);
 
   return (
