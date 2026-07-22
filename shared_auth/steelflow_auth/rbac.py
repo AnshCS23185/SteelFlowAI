@@ -94,7 +94,12 @@ def verify_project_access(project_id: UUID, user: CurrentUser = Depends(get_curr
     if not db_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found in database")
         
-    # Check assignment
+    # super_admin can access all projects
+    role_str = db_user.role.value if hasattr(db_user.role, 'value') else str(db_user.role)
+    if role_str == "super_admin":
+        return user
+
+    # Check assignment for other roles
     assignment = db.query(ProjectAssignment).filter(
         ProjectAssignment.user_id == db_user.id,
         ProjectAssignment.project_id == project_id

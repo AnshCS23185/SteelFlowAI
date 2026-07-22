@@ -117,6 +117,75 @@ def create_project(
         client_id=str(new_project.client_id)
     )
 
+@router.put("/{project_id}", response_model=ProjectResponse)
+def update_project(
+    project_id: str,
+    project_in: ProjectCreate,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(AppModule.MODULE1_PROJECTS, AccessLevel.FULL))
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Update basic details
+    project.title = project_in.title
+    project.description = project_in.description
+    project.tonnage = project_in.tonnage
+
+    # Update Client if changed
+    if project_in.client_name:
+        client = db.query(Client).filter(Client.name == project_in.client_name).first()
+        if not client:
+            client = Client(name=project_in.client_name)
+            db.add(client)
+            db.flush()
+        project.client_id = client.id
+
+    # Handle PM Assignment updates
+    if project_in.supervisor_id:
+        pm_assignment = db.query(ProjectAssignment).filter(
+            ProjectAssignment.project_id == project.id,
+            ProjectAssignment.assignment_role == "project_manager"
+        ).first()
+        if pm_assignment:
+            pm_assignment.user_id = project_in.supervisor_id
+        else:
+            new_pm = ProjectAssignment(
+                user_id=project_in.supervisor_id,
+                project_id=project.id,
+                assignment_role="project_manager"
+            )
+            db.add(new_pm)
+
+    # Handle Client Rep Assignment updates
+    if project_in.client_user_id:
+        client_assignment = db.query(ProjectAssignment).filter(
+            ProjectAssignment.project_id == project.id,
+            ProjectAssignment.assignment_role == "client_rep"
+        ).first()
+        if client_assignment:
+            client_assignment.user_id = project_in.client_user_id
+        else:
+            new_client = ProjectAssignment(
+                user_id=project_in.client_user_id,
+                project_id=project.id,
+                assignment_role="client_rep"
+            )
+            db.add(new_client)
+
+    db.commit()
+    db.refresh(project)
+
+    return ProjectResponse(
+        id=str(project.id),
+        title=project.title,
+        description=project.description,
+        tonnage=project.tonnage or 0,
+        status=project.status,
+        client_id=str(project.client_id)
+    )
+
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project_by_id(
     project_id: UUID,
