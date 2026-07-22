@@ -1,0 +1,87 @@
+STEELFLOW AI - COMPREHENSIVE WEBSOCKET ARCHITECTURE & IMPLEMENTATION STRATEGY
+=============================================================================
+
+EXECUTIVE SUMMARY
+-----------------
+While the foundational CRUD operations in SteelFlow AI will rely on standard REST APIs (HTTP GET, POST, PUT, DELETE), the platform's core differentiator is its real-time, physical-to-digital twin capabilities. To achieve sub-second latency for AI interactions, machine telemetry, and logistics tracking, a centralized WebSocket (WS) gateway will be deployed. This document outlines the exact technical topology, integration points, payload structures, and the phased implementation timeline.
+
+=============================================================================
+PART 1: TECHNICAL ARCHITECTURE
+=============================================================================
+
+1. The WebSocket Gateway
+Instead of having the React frontend manage individual WS connections to Module 1, Module 23, and Module 45, we will implement a Centralized API Gateway pattern.
+- Tech Stack: FastAPI WebSockets (Python) or a dedicated Node.js + Socket.io server.
+- State Management: Redis Pub/Sub will be used as the message broker. When Module 23 receives an overheating alert from a CNC machine, it publishes to a Redis channel (`channel:telemetry:machine_1`). The Gateway subscribes to this channel and pushes the alert to all connected authenticated clients via WebSockets.
+
+2. Connection Lifecycle & Security
+- Handshake: Clients establish a connection at `wss://api.steelflow.ai/ws`.
+- Auth: The initial upgrade request will pass the JWT Bearer token. If invalid, the connection is immediately rejected (HTTP 401).
+- Ping/Pong: The server will send a `ping` every 30 seconds to keep load-balancers from dropping idle connections.
+
+=============================================================================
+PART 2: EXACT USE CASES & DATA FLOWS (THE "WHERE")
+=============================================================================
+
+1. Persistent AI Copilot (Shared AI Module)
+* Trigger: User requests a complex analysis of a shipping list.
+* Payload Flow:
+  - User sends standard HTTP POST to start the job.
+  - Server returns a `job_id`.
+  - Frontend listens on WS: `{ "action": "subscribe", "channel": "copilot_stream_<job_id>" }`
+  - As the LLM (Ollama/OpenAI) generates tokens, the backend publishes them:
+    `{ "event": "token", "data": { "job_id": "123", "text": "Based on " } }`
+* Why: Prevents HTTP timeout errors on long-running AI inference tasks and provides a snappy, conversational UI experience.
+
+2. Live Machine & Factory Telemetry (Module 23 - Manufacturing)
+* Trigger: PLCs on the shop floor report live metrics (Temperature, RPM, Status).
+* Payload Flow:
+  - Backend polls or receives MQTT streams from machines.
+  - Pushes normalized JSON to the frontend:
+    `{ "event": "machine_telemetry", "data": { "machine_id": "CNC_A", "temp_c": 85, "status": "OVERHEATING" } }`
+* Why: Allows the Project Manager to see critical shop-floor failures in real-time, minimizing downtime and ruined steel stock.
+
+3. Collaborative 2D/3D Drawing Markups (Module 1 - Project Details)
+* Trigger: Multiple users view the same blueprint.
+* Payload Flow:
+  - Frontend captures mouse coordinates and click events on the canvas.
+  - Sends WS message: `{ "action": "markup_draw", "data": { "project_id": "p-1", "x": 120, "y": 450, "color": "red" } }`
+  - Server broadcasts to all other users in the `room:project_p-1`.
+* Why: Enables synchronous collaboration between Clients and PMs without constant page refreshing.
+
+4. Real-Time Truck Tracking (Module 45 - Transportation)
+* Trigger: GPS modules on dispatch trucks ping their location every 5 seconds.
+* Payload Flow:
+  - GPS device -> Backend -> Redis -> WS Gateway -> Frontend Map.
+  - `{ "event": "truck_location", "data": { "dispatch_id": "D-99", "lat": 40.7128, "lng": -74.0060 } }`
+* Why: Just-in-time delivery for crane operations at the construction site.
+
+5. Critical Inventory Alerts (Module 23 - Inventory)
+* Trigger: Material stock dips below safety thresholds during automatic allocation.
+* Payload Flow:
+  - `{ "event": "inventory_alert", "data": { "material": "IS2062 E350", "current_stock": 2.5, "unit": "Tons" } }`
+* Why: Immediate notification prevents production bottlenecks.
+
+=============================================================================
+PART 3: PHASED ROLLOUT PLAN (THE "WHEN")
+=============================================================================
+
+PHASE 1: The RESTful Foundation (CURRENT PHASE)
+-----------------------------------------------
+- Goal: Get 100% of the core business logic working via standard HTTP.
+- Action: Build out the Postgres database schemas, routing, controllers, file uploads (PDF/Excel), and the RBAC system.
+- Rule: Do NOT introduce WebSockets yet. If a task takes a few seconds (like parsing an Excel file), use a simple React loading spinner.
+
+PHASE 2: The Core AI Upgrade (POST-MVP)
+-----------------------------------------------
+- Goal: Implement WebSockets specifically for the AI Copilot.
+- Action: Spin up the WS Gateway in FastAPI. Establish the JWT authentication flow for sockets. Use WebSockets strictly to stream LLM tokens to the UI chat interface.
+
+PHASE 3: Full Real-Time Integration (V2)
+-----------------------------------------------
+- Goal: Retrofit dashboards with live data.
+- Action: Introduce Redis Pub/Sub. Connect the manufacturing dashboard to live machine telemetry and the logistics dashboard to the GPS streams.
+
+SUMMARY
+-------
+Prematurely introducing WebSockets will drastically slow down initial development due to state-management complexities, load-balancer configurations, and dropped-connection handling. We will build the platform as a robust RESTful monolith first, and use WebSockets as a surgical upgrade in Phase 2 & 3 to achieve the premium "live" feel.

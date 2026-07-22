@@ -85,6 +85,11 @@ export const api = {
     return response.data;
   },
 
+  updateProject: async (projectId, projectData) => {
+    const response = await axiosInstance.put(`/projects/${projectId}`, projectData);
+    return response.data;
+  },
+
   deleteProject: async (projectId) => {
     const response = await axiosInstance.delete(`/projects/${projectId}`);
     return response.data;

@@ -19,4 +19,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear all auth state to prevent ghost sessions
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('steelflow-user');
+      sessionStorage.removeItem('role');
+      sessionStorage.removeItem('email');
+      sessionStorage.removeItem('name');
+      
+      // Force redirect to login page if we aren't already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { api } from '../../../services/api';
-import { Plus, Search, Calendar, User, Compass, X, Trash2 } from 'lucide-react';
+import { Plus, Search, Calendar, User, Compass, X, Trash2, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProjectHub() {
@@ -12,10 +12,11 @@ export default function ProjectHub() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [availableUsers, setAvailableUsers] = useState([]);
-  
+
   // Create Project State
   const [newProject, setNewProject] = useState({
     name: '',
@@ -35,7 +36,7 @@ export default function ProjectHub() {
           api.getProjects(),
           api.getUsers()
         ]);
-        
+
         const mappedData = projectsData.map(p => ({
           ...p,
           name: p.title,
@@ -59,26 +60,35 @@ export default function ProjectHub() {
 
     setIsSubmitting(true);
     try {
-      await api.createProject({
+      const payload = {
         title: newProject.name,
         description: newProject.description,
         client_name: newProject.clientName,
         tonnage: parseInt(newProject.tonnage) || 0,
         supervisor_id: newProject.supervisorId || undefined,
         client_user_id: newProject.clientUserId || undefined
-      });
-      
+      };
+
+      if (editingProject) {
+        await api.updateProject(editingProject, payload);
+      } else {
+        await api.createProject(payload);
+      }
+
       const updatedData = await api.getProjects();
       const mappedData = updatedData.map(p => ({
-          ...p,
-          name: p.title,
-          clientName: p.client_id,
-          progress: 0,
-          supervisorName: 'Assigned PM',
-          tonnage: p.tonnage || 0
+        ...p,
+        name: p.title,
+        clientName: p.client_id,
+        progress: 0,
+        supervisorName: 'Assigned PM',
+        tonnage: p.tonnage || 0
       }));
       setProjects(mappedData);
+
+      // Reset Modal
       setShowCreateModal(false);
+      setEditingProject(null);
       setNewProject({
         name: '',
         clientName: '',
@@ -90,10 +100,26 @@ export default function ProjectHub() {
         location: 'Zone A - Fabrication Bay 3'
       });
     } catch (err) {
-      console.error("Failed to create project", err);
+      console.error("Failed to save project", err);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditClick = (e, p) => {
+    e.stopPropagation();
+    setEditingProject(p.id);
+    setNewProject({
+      name: p.name || '',
+      clientName: p.clientName || '',
+      clientUserId: '', // Not strictly tracked in frontend yet
+      supervisorId: '', // Not strictly tracked in frontend yet
+      tonnage: p.tonnage || '',
+      deadline: p.deadline || '',
+      description: p.description || '',
+      location: 'Zone A - Fabrication Bay 3'
+    });
+    setShowCreateModal(true);
   };
 
   const handleDeleteProject = async (e, projectId) => {
@@ -110,12 +136,12 @@ export default function ProjectHub() {
   };
 
   const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
-                          p.clientName.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = filter === 'All' 
-      ? p.status.toLowerCase() !== 'archived' 
-      : filter === 'Planning' 
-        ? (p.status.toLowerCase() === 'planning' || p.status.toLowerCase() === 'registered') 
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.clientName.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === 'All'
+      ? p.status.toLowerCase() !== 'archived'
+      : filter === 'Planning'
+        ? (p.status.toLowerCase() === 'planning' || p.status.toLowerCase() === 'registered')
         : p.status.toLowerCase() === filter.toLowerCase();
     return matchesSearch && matchesFilter;
   });
@@ -135,9 +161,22 @@ export default function ProjectHub() {
             Monitor and coordinate structural fabrication logs, mill certificates, and shipping schedules across active projects.
           </p>
         </div>
-        
+
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            setEditingProject(null);
+            setNewProject({
+              name: '',
+              clientName: '',
+              clientUserId: '',
+              supervisorId: '',
+              tonnage: '',
+              deadline: '',
+              description: '',
+              location: 'Zone A - Fabrication Bay 3'
+            });
+            setShowCreateModal(true);
+          }}
           className="flex items-center gap-2 px-4 py-2.5 bg-brand-orange text-white hover:bg-brand-orange/90 text-xs font-semibold rounded-md shadow-sm transition-all hover:scale-[1.02] cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -193,11 +232,10 @@ export default function ProjectHub() {
             <button
               key={status}
               onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                filter === status
+              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${filter === status
                   ? 'bg-text-primary text-white dark:bg-white dark:text-[#111111]'
                   : 'bg-surface-base text-text-secondary border border-border-base hover:bg-surface-elevated'
-              }`}
+                }`}
             >
               {status}
             </button>
@@ -211,37 +249,41 @@ export default function ProjectHub() {
           <div
             key={p.id}
             onClick={() => {
-              if (user?.role === 'super_admin') {
-                alert("Administrators are restricted to high-level hub oversight and user management. Only assigned managers can enter specific project workspaces.");
-              } else {
-                navigate(`/project/${p.id}`);
-              }
+              navigate(`/project/${p.id}`);
             }}
             className="group block p-6 border border-border-base bg-surface-base rounded-lg transition-all duration-200 hover:scale-[1.01] hover:border-brand-orange/30 cursor-pointer flex flex-col justify-between h-64"
           >
             <div className="space-y-3">
               <div className="flex items-start justify-between">
-                <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
-                  p.status === 'Active' 
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${p.status === 'Active'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                     : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                }`}>
+                  }`}>
                   {p.status}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-text-secondary font-medium flex items-center gap-1">
                     <Calendar className="w-3 h-3" /> Due {p.deadline}
                   </span>
-                  <button 
-                    onClick={(e) => handleDeleteProject(e, p.id)}
-                    className="p-1 rounded text-text-secondary hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                    title="Delete Project"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => handleEditClick(e, p)}
+                      className="p-1 rounded text-text-secondary hover:text-brand-orange hover:bg-brand-orange/10 transition-colors"
+                      title="Edit Project"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteProject(e, p.id)}
+                      className="p-1 rounded text-text-secondary hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                      title="Delete Project"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              
+
               <h2 className="text-lg font-display font-bold text-text-primary group-hover:text-brand-orange transition-colors">
                 {p.name}
               </h2>
@@ -258,8 +300,8 @@ export default function ProjectHub() {
                   <span className="text-text-primary">{p.progress}%</span>
                 </div>
                 <div className="h-1 bg-surface-elevated rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-brand-orange transition-all duration-500" 
+                  <div
+                    className="h-full bg-brand-orange transition-all duration-500"
                     style={{ width: `${p.progress}%` }}
                   />
                 </div>
@@ -285,14 +327,14 @@ export default function ProjectHub() {
       <AnimatePresence>
         {showCreateModal && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black"
               onClick={() => setShowCreateModal(false)}
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: '100%' }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: '100%' }}
@@ -302,9 +344,9 @@ export default function ProjectHub() {
               <div className="space-y-8">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-text-primary">
-                    Create New Project
+                    {editingProject ? 'Edit Project' : 'Create New Project'}
                   </h2>
-                  <button 
+                  <button
                     onClick={() => setShowCreateModal(false)}
                     className="p-1.5 hover:bg-surface-elevated rounded-md transition-all cursor-pointer text-text-secondary"
                   >
@@ -320,7 +362,7 @@ export default function ProjectHub() {
                       type="text"
                       placeholder="e.g. Apex Commercial Tower"
                       value={newProject.name}
-                      onChange={(e) => setNewProject({...newProject, name: e.target.value})}
+                      onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
                       className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
                     />
                   </div>
@@ -333,7 +375,7 @@ export default function ProjectHub() {
                         type="text"
                         placeholder="Apex Corp"
                         value={newProject.clientName}
-                        onChange={(e) => setNewProject({...newProject, clientName: e.target.value})}
+                        onChange={(e) => setNewProject({ ...newProject, clientName: e.target.value })}
                         className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
                       />
                     </div>
@@ -343,7 +385,7 @@ export default function ProjectHub() {
                         <select
                           required
                           value={newProject.supervisorId}
-                          onChange={(e) => setNewProject({...newProject, supervisorId: e.target.value})}
+                          onChange={(e) => setNewProject({ ...newProject, supervisorId: e.target.value })}
                           className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
                         >
                           <option value="">Select Project Manager...</option>
@@ -351,7 +393,7 @@ export default function ProjectHub() {
                             .filter(u => u.role === 'project_manager')
                             .map(u => (
                               <option key={u.id} value={u.id}>{u.full_name ? `${u.full_name} (${u.email})` : u.email}</option>
-                          ))}
+                            ))}
                         </select>
                       </div>
                       <div className="space-y-1">
@@ -359,7 +401,7 @@ export default function ProjectHub() {
                         <select
                           required
                           value={newProject.clientUserId}
-                          onChange={(e) => setNewProject({...newProject, clientUserId: e.target.value})}
+                          onChange={(e) => setNewProject({ ...newProject, clientUserId: e.target.value })}
                           className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
                         >
                           <option value="">Select Client User...</option>
@@ -367,7 +409,7 @@ export default function ProjectHub() {
                             .filter(u => u.role === 'client')
                             .map(u => (
                               <option key={u.id} value={u.id}>{u.full_name ? `${u.full_name} (${u.email})` : u.email}</option>
-                          ))}
+                            ))}
                         </select>
                       </div>
                     </div>
@@ -380,7 +422,7 @@ export default function ProjectHub() {
                         type="number"
                         placeholder="4200"
                         value={newProject.tonnage}
-                        onChange={(e) => setNewProject({...newProject, tonnage: e.target.value})}
+                        onChange={(e) => setNewProject({ ...newProject, tonnage: e.target.value })}
                         className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
                       />
                     </div>
@@ -390,7 +432,7 @@ export default function ProjectHub() {
                         required
                         type="date"
                         value={newProject.deadline}
-                        onChange={(e) => setNewProject({...newProject, deadline: e.target.value})}
+                        onChange={(e) => setNewProject({ ...newProject, deadline: e.target.value })}
                         className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange"
                       />
                     </div>
@@ -402,11 +444,11 @@ export default function ProjectHub() {
                       rows={3}
                       placeholder="Add brief details of structural components, paint requirements..."
                       value={newProject.description}
-                      onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+                      onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                       className="w-full p-3 text-xs bg-surface-base border border-border-base rounded-md outline-none text-text-primary focus:border-brand-orange resize-none"
                     />
                   </div>
-                  
+
                   <div className="flex gap-3 pt-4">
                     <button
                       type="submit"
