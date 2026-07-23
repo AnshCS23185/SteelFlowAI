@@ -9,6 +9,13 @@ from app.api import (
     material_requests,
     transactions
 )
+from steelflow_db.core.db import engine
+from steelflow_db.core.base import Base
+from app.models import * # Import all models so they register with Base.metadata
+
+# Create any missing database tables on startup (e.g. inventory_transactions)
+Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI(
     title="SteelFlowAI - Inventory Management API",
@@ -18,20 +25,20 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all for local integration
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Register routers under /api
-app.include_router(materials.router, prefix="/api")
-app.include_router(warehouses.router, prefix="/api")
-app.include_router(inventory.router, prefix="/api")
-app.include_router(goods_receipts.router, prefix="/api")
-app.include_router(reservations.router, prefix="/api")
-app.include_router(material_requests.router, prefix="/api")
-app.include_router(transactions.router, prefix="/api")
+# Register routers under /api/v1
+app.include_router(materials.router, prefix="/inventory")
+app.include_router(warehouses.router, prefix="/inventory")
+app.include_router(inventory.router, prefix="/inventory")
+app.include_router(goods_receipts.router, prefix="/inventory")
+app.include_router(reservations.router, prefix="/inventory")
+app.include_router(material_requests.router, prefix="/inventory")
+app.include_router(transactions.router, prefix="/inventory")
 
 @app.get("/")
 def root():

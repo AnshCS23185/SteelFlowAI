@@ -101,30 +101,6 @@ export const defaultProjects = [
   }
 ];
 
-export const defaultInventory = {
-  '1': [
-    { id: 'i1', type: 'W-Beams', spec: 'W24x76 Grade 50', ordered: 150, allocated: 120, received: 110, status: 'Sufficient' },
-    { id: 'i2', type: 'HSS Columns', spec: 'HSS12x12x1/2', ordered: 80, allocated: 80, received: 80, status: 'Fully Received' },
-    { id: 'i3', type: 'Steel Plates', spec: 'A36 1.5" Thick', ordered: 240, allocated: 200, received: 180, status: 'Sufficient' },
-    { id: 'i4', type: 'Bolts & Fasteners', spec: 'A325 High Strength', ordered: 5000, allocated: 4500, received: 4200, status: 'Sufficient' },
-    { id: 'i5', type: 'Welding Wire', spec: 'E7018 5/32"', ordered: 600, allocated: 400, received: 350, status: 'Low Stock' }
-  ],
-  '2': [
-    { id: 'i6', type: 'Plate Girder Flanges', spec: 'A572 Gr50 2.5"', ordered: 90, allocated: 80, received: 60, status: 'Pending Delivery' },
-    { id: 'i7', type: 'Plate Girder Webs', spec: 'A572 Gr50 1.0"', ordered: 90, allocated: 80, received: 70, status: 'Sufficient' },
-    { id: 'i8', type: 'Stiffeners', spec: 'A36 0.75" Plate', ordered: 300, allocated: 250, received: 150, status: 'Low Stock' },
-    { id: 'i9', type: 'Shear Studs', spec: '3/4" x 6" Grade C', ordered: 12000, allocated: 12000, received: 9000, status: 'Sufficient' }
-  ],
-  '3': [
-    { id: 'i10', type: 'CHS Chord Members', spec: 'CHS 219.1x8.0', ordered: 110, allocated: 110, received: 110, status: 'Fully Received' },
-    { id: 'i11', type: 'CHS Web Members', spec: 'CHS 114.3x4.5', ordered: 220, allocated: 220, received: 220, status: 'Fully Received' },
-    { id: 'i12', type: 'Gusset Plates', spec: 'A36 0.5" Laser Cut', ordered: 450, allocated: 450, received: 440, status: 'Fully Received' }
-  ],
-  '4': [
-    { id: 'i13', type: 'Stainless Beams', spec: '316L S4x7.7', ordered: 60, allocated: 40, received: 10, status: 'Awaiting Order' },
-    { id: 'i14', type: 'Precision Tubes', spec: 'HSS 6x6x1/4 Polish', ordered: 120, allocated: 90, received: 20, status: 'Pending Delivery' }
-  ]
-};
 
 export const defaultProduction = {
   '1': [

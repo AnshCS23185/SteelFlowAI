@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.repositories.warehouse import WarehouseRepository
-from app.models.warehouse import Warehouse
+from app.models import Warehouse
 from app.schemas.schemas import WarehouseCreate, WarehouseUpdate
 from uuid import UUID
 from typing import List

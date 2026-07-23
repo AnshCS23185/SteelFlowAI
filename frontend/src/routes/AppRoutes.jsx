@@ -29,8 +29,13 @@ import ProjectDetailsPage from '../modules/module1/projectDetails/pages/ProjectD
 // Module 23 Pages
 import PlanningDashboard from '../modules/module23/planning/pages/PlanningDashboard';
 import ManufacturingDashboard from '../modules/module23/manufacturing/pages/ManufacturingDashboard';
-import InventoryDashboard from '../modules/module23/inventory/pages/InventoryDashboard';
 import QualityDashboard from '../modules/module23/qualityControl/pages/QualityDashboard';
+
+// New Inventory Module Pages
+import InventoryDashboard from '../modules/module23/inventory/pages/Dashboard';
+import InventoryMaterials from '../modules/module23/inventory/pages/Materials';
+import InventoryRequests from '../modules/module23/inventory/pages/Requests';
+import InventoryAllocationLogs from '../modules/module23/inventory/pages/AllocationLogs';
 
 // Module 45 Pages
 import DispatchDashboard from '../modules/module45/dispatch/pages/DispatchDashboard';
@@ -104,13 +109,10 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="dashboard" element={<InventoryDashboard defaultTab="dashboard" />} />
-        <Route path="materials" element={<InventoryDashboard defaultTab="materials" />} />
-        <Route path="warehouses" element={<InventoryDashboard defaultTab="warehouses" />} />
-        <Route path="stock" element={<InventoryDashboard defaultTab="stock" />} />
-        <Route path="goods-receipts" element={<InventoryDashboard defaultTab="goods-receipts" />} />
-        <Route path="requests" element={<InventoryDashboard defaultTab="requests" />} />
-        <Route path="transactions" element={<InventoryDashboard defaultTab="transactions" />} />
+        <Route path="dashboard" element={<InventoryDashboard />} />
+        <Route path="materials" element={<InventoryMaterials />} />
+        <Route path="requests" element={<InventoryRequests />} />
+        <Route path="allocation-logs" element={<InventoryAllocationLogs />} />
         <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
 

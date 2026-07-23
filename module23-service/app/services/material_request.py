@@ -2,9 +2,9 @@ from sqlalchemy.orm import Session
 from app.repositories.material_request import MaterialRequestRepository
 from app.repositories.inventory_stock import InventoryStockRepository
 from app.repositories.inventory_transaction import InventoryTransactionRepository
-from app.models.material_request import MaterialRequest
-from app.models.inventory_stock import InventoryStock
-from app.models.inventory_transaction import InventoryTransaction
+from app.models import MaterialRequest
+from app.models import Inventory
+from app.models import InventoryTransaction
 from app.schemas.schemas import MaterialRequestCreate, MaterialRequestUpdate
 from uuid import UUID
 from typing import List, Optional
@@ -30,7 +30,7 @@ class MaterialRequestService:
         stock = self.stock_repo.get_stock(schema.material_id, schema.warehouse_id)
         available = 0.0
         if stock:
-            available = stock.current_stock - stock.reserved_stock - stock.issued_stock
+            available = stock.available_quantity - stock.reserved_quantity
             
         shortage = schema.required_quantity - (available if available > 0 else 0.0)
         if shortage < 0:
@@ -46,7 +46,7 @@ class MaterialRequestService:
             shortage_quantity=shortage,
             approved_quantity=0.0,
             status="Pending",
-            created_by=schema.created_by
+            performed_by=schema.created_by
         )
         return self.req_repo.create(req)
         
@@ -69,17 +69,17 @@ class MaterialRequestService:
         # Update stock: Since request is approved, we receive the material into the warehouse
         stock = self.stock_repo.get_stock(req.material_id, req.warehouse_id)
         if not stock:
-            stock = InventoryStock(
+            stock = Inventory(
                 material_id=req.material_id,
                 warehouse_id=req.warehouse_id,
-                current_stock=approved_qty,
-                reserved_stock=0.0,
-                issued_stock=0.0,
-                low_stock_threshold=10.0
+                available_quantity=approved_qty,
+                reserved_quantity=0.0,
+                
+                minimum_stock=10.0
             )
             self.stock_repo.create(stock)
         else:
-            stock.current_stock += approved_qty
+            stock.available_quantity += approved_qty
             self.stock_repo.update()
             
         # Create Inventory Transaction
@@ -90,8 +90,8 @@ class MaterialRequestService:
             material_id=req.material_id,
             warehouse_id=req.warehouse_id,
             quantity=approved_qty,
-            created_by=reviewed_by,
-            description=f"Approved Material Request {req.request_number}. Stock increased by {approved_qty}."
+            performed_by=reviewed_by,
+            remarks=f"Approved Material Request {req.request_number}. Stock increased by {approved_qty}."
         )
         self.tx_repo.create(tx)
         
@@ -107,3 +107,4 @@ class MaterialRequestService:
         req.reviewed_by = reviewed_by
         self.req_repo.update()
         return req
+

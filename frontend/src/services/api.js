@@ -1,6 +1,5 @@
 import axiosInstance from './axios';
 import {
-  defaultInventory,
   defaultProduction,
   defaultTransportation,
   defaultDailyProgress,
@@ -19,7 +18,6 @@ const getOrInit = (key, defaultData) => {
 };
 
 const state = {
-  inventory: getOrInit('inventory', defaultInventory),
   production: getOrInit('production', defaultProduction),
   transportation: getOrInit('transportation', defaultTransportation),
   dailyProgress: getOrInit('dailyProgress', defaultDailyProgress),

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.inventory_transaction import InventoryTransaction
+from app.models import InventoryTransaction
 from app.repositories.base import BaseRepository
 from uuid import UUID
 from typing import List

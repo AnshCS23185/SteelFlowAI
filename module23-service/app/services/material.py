@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.repositories.material import MaterialRepository
-from app.models.material import Material
+from app.models import Material
 from app.schemas.schemas import MaterialCreate, MaterialUpdate
 from uuid import UUID
 from typing import List

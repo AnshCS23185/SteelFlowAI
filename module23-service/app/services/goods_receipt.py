@@ -3,10 +3,10 @@ from app.repositories.goods_receipt import GoodsReceiptRepository
 from app.repositories.goods_receipt_item import GoodsReceiptItemRepository
 from app.repositories.inventory_stock import InventoryStockRepository
 from app.repositories.inventory_transaction import InventoryTransactionRepository
-from app.models.goods_receipt import GoodsReceipt
-from app.models.goods_receipt_item import GoodsReceiptItem
-from app.models.inventory_stock import InventoryStock
-from app.models.inventory_transaction import InventoryTransaction
+from app.models import GoodsReceipt
+from app.models import GoodsReceiptItem
+from app.models import Inventory
+from app.models import InventoryTransaction
 from app.schemas.schemas import GoodsReceiptCreate
 from uuid import UUID
 from typing import List
@@ -57,17 +57,17 @@ class GoodsReceiptService:
             stock = self.stock_repo.get_stock(item_schema.material_id, wh_id)
             if not stock:
                 # Create stock record
-                stock = InventoryStock(
+                stock = Inventory(
                     material_id=item_schema.material_id,
                     warehouse_id=wh_id,
-                    current_stock=item_schema.quantity,
-                    reserved_stock=0.0,
-                    issued_stock=0.0,
-                    low_stock_threshold=10.0
+                    available_quantity=item_schema.quantity,
+                    reserved_quantity=0.0,
+                    
+                    minimum_stock=10.0
                 )
                 self.stock_repo.create(stock)
             else:
-                stock.current_stock += item_schema.quantity
+                stock.available_quantity += item_schema.quantity
                 self.stock_repo.update()
                 
             # Create Inventory Transaction
@@ -78,9 +78,10 @@ class GoodsReceiptService:
                 material_id=item_schema.material_id,
                 warehouse_id=wh_id,
                 quantity=item_schema.quantity,
-                created_by=schema.received_by,
-                description=f"Received goods via GRN {gr.grn_number}. Qty: {item_schema.quantity} @ Rate: {item_schema.rate}"
+                performed_by=schema.received_by,
+                remarks=f"Received goods via GRN {gr.grn_number}. Qty: {item_schema.quantity} @ Rate: {item_schema.rate}"
             )
             self.tx_repo.create(tx)
             
         return gr
+
