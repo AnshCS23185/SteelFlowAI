@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.goods_receipt_item import GoodsReceiptItem
+from app.models import GoodsReceiptItem
 from app.repositories.base import BaseRepository
 
 class GoodsReceiptItemRepository(BaseRepository[GoodsReceiptItem]):

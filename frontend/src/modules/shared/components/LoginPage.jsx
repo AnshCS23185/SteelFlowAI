@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Shield, Hammer, UserCheck, Package, Lock, Mail, AlertCircle, ArrowRight, Building2, Eye, EyeOff } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Shield, Lock, Mail, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { api } from '../../../services/api';
+import logo from '../../../assets/logo.png';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -15,43 +15,11 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const demoAccounts = [
-    {
-      role: 'super_admin',
-      name: 'Administrator',
-      email: 'admin@gmail.com',
-      password: '1234',
-      title: 'System Administrator',
-      avatar: 'AD',
-      icon: Shield
-    },
-    {
-      role: 'project_manager',
-      name: 'Project Manager',
-      email: 'supervisor@gmail.com',
-      password: '1234',
-      title: 'Project Manager',
-      avatar: 'PM',
-      icon: Hammer
-    },
-    {
-      role: 'inventory_manager',
-      name: 'Inventory Manager',
-      email: 'inventory@gmail.com',
-      password: '1234',
-      title: 'Inventory Manager',
-      avatar: 'IM',
-      icon: Package
-    },
-    {
-      role: 'client',
-      name: 'Client Portal',
-      email: 'client@gmail.com',
-      password: '1234',
-      title: 'Client Portal',
-      avatar: 'CP',
-      icon: Building2
-    }
+  const fallbackAccounts = [
+    { role: 'super_admin', name: 'Administrator', title: 'System Administrator', avatar: 'AD' },
+    { role: 'project_manager', name: 'Project Manager', title: 'Project Manager', avatar: 'PM' },
+    { role: 'inventory_manager', name: 'Inventory Manager', title: 'Inventory Manager', avatar: 'IM' },
+    { role: 'client', name: 'Client Portal', title: 'Client Portal', avatar: 'CP' }
   ];
 
   const handleLogin = async (e) => {
@@ -60,17 +28,16 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Use the actual API for authentication!
       const response = await api.login(email.trim(), password);
       
       const { access_token, user: apiUser } = response;
       localStorage.setItem('token', access_token);
 
-      const account = demoAccounts.find((acc) => acc.role === apiUser.role) || demoAccounts[3]; // Fallback to client if unknown
+      const account = fallbackAccounts.find((acc) => acc.role === apiUser.role) || fallbackAccounts[3];
       
       const userData = {
         id: apiUser.id,
-        name: account.name, // The backend doesn't return names yet, so we'll mock them
+        name: account.name,
         email: apiUser.email,
         role: apiUser.role,
         title: account.title,
@@ -96,125 +63,128 @@ export default function LoginPage() {
     }
   };
 
-  const fillCredentials = (acc) => {
-    setEmail(acc.email);
-    setPassword(acc.password);
-    setError('');
-  };
-
   return (
-    <div className="flex flex-col justify-center font-sans">
-      <div className="bg-white p-5 border border-gray-200 rounded shadow-sm max-w-md w-full mx-auto space-y-4">
-        
-        {/* Title & Slogan */}
-        <div className="space-y-1">
-          <h2 className="text-xl font-bold tracking-tight text-[#111111] font-display">
-            Welcome Back
-          </h2>
-          <p className="text-[11px] text-[#6B7280]">
-            Sign in to continue to SteelFlow.
-          </p>
-        </div>
-
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded flex items-center gap-2.5 text-xs font-semibold"
-          >
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
-          </motion.div>
-        )}
-
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-3.5 text-xs">
-          <div>
-            <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6B7280]" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@gmail.com"
-                required
-                className="w-full pl-9 pr-3 py-2 bg-[#FAFAFA] border border-gray-200 rounded text-xs text-[#111111] placeholder:text-gray-400 focus:outline-none focus:border-[#FF5A1F] transition-colors"
-              />
-            </div>
+    <div className="h-screen w-full flex flex-col lg:flex-row font-sans m-0 p-0 overflow-hidden">
+      
+      {/* Left Side */}
+      <div className="w-full lg:w-1/2 bg-[#111111] flex flex-col justify-between p-8 lg:p-12 xl:p-16 relative h-full">
+        <div className="flex flex-col h-full flex-grow">
+          {/* Logo - Wider and more visible */}
+          <div className="mb-8 lg:mb-12 w-48 sm:w-56 lg:w-64">
+            <img 
+              src={logo} 
+              alt="SteelFlow AI" 
+              className="w-full h-auto object-contain brightness-0 invert" 
+            />
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6B7280]" />
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••"
-                required
-                className="w-full pl-9 pr-9 py-2 bg-[#FAFAFA] border border-gray-200 rounded text-xs text-[#111111] placeholder:text-gray-400 focus:outline-none focus:border-[#FF5A1F] transition-colors"
-              />
+          <div className="my-auto space-y-4 max-w-2xl">
+            <h3 className="text-[#FF5A1F] text-[10px] lg:text-xs font-bold tracking-widest uppercase">
+              Steel Fabrication Operating Platform
+            </h3>
+            <h1 className="text-white text-3xl lg:text-[40px] xl:text-[44px] leading-[1.1] font-bold tracking-tight">
+              Manage Every Fabrication Project From Drawing To Dispatch.
+            </h1>
+            <p className="text-[#A8A8A8] text-xs lg:text-[14px] leading-relaxed max-w-xl">
+              Centralize project planning, inventory, production execution, warehouse operations and dispatch management in one integrated platform designed for steel fabrication industries.
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-[10px] lg:text-[11px] text-[#7B7B7B]">
+          <span>Version 1.0</span>
+          <span>Developed for Industrial Fabrication Management</span>
+        </div>
+      </div>
+
+      {/* Right Side - Clean form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-[#F7F7F5] h-full overflow-y-auto lg:overflow-hidden">
+        
+        <div className="w-full max-w-[420px] bg-white border border-[#ECECEC] rounded-2xl shadow-sm flex flex-col p-8 my-auto">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-[#171717] tracking-tight mb-1">
+              Welcome Back
+            </h2>
+            <p className="text-sm text-[#707070]">
+              Sign in to continue to SteelFlow AI
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-5 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg flex items-center gap-2 text-sm font-medium">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="flex flex-col flex-grow">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-[#707070] uppercase tracking-wider mb-2">
+                  Email Address
+                </label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E8E] group-focus-within:text-[#F64A14] transition-colors" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    required
+                    className="w-full h-11 pl-10 pr-4 bg-[#F7F7F5] border border-[#ECECEC] rounded-lg text-sm text-[#171717] placeholder:text-[#8E8E8E] focus:outline-none focus:border-[#F64A14] focus:ring-1 focus:ring-[#F64A14] transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#707070] uppercase tracking-wider mb-2">
+                  Password
+                </label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E8E] group-focus-within:text-[#F64A14] transition-colors" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full h-11 pl-10 pr-10 bg-[#F7F7F5] border border-[#ECECEC] rounded-lg text-sm text-[#171717] placeholder:text-[#8E8E8E] focus:outline-none focus:border-[#F64A14] focus:ring-1 focus:ring-[#F64A14] transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E8E8E] hover:text-[#171717] transition-colors cursor-pointer p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 mb-6">
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#111111] transition-colors cursor-pointer"
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 bg-[#F64A14] hover:bg-[#E04A10] text-white font-semibold text-sm rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
               >
-                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {loading ? 'Signing in...' : 'Sign In'}
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 bg-[#FF5A1F] hover:bg-[#e04a10] text-white font-bold text-xs rounded transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </form>
-
-        {/* Divider */}
-        <div className="relative flex items-center justify-center py-1">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <span className="relative px-2 bg-white text-[9px] font-bold text-[#6B7280] uppercase tracking-wider">
-            Demo Accounts
-          </span>
-        </div>
-
-        {/* Demo Accounts List Table */}
-        <div className="border border-gray-200 rounded divide-y divide-gray-100 overflow-hidden bg-[#FAFAFA] text-xs">
-          {demoAccounts.map((acc) => {
-            const Icon = acc.icon;
-            return (
-              <div key={acc.role} className="p-2 flex items-center justify-between gap-3 hover:bg-white transition-colors">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="p-1 bg-white border border-gray-200 rounded text-[#FF5A1F]">
-                    <Icon className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-[#111111] text-[11px] truncate">{acc.name}</p>
-                    <p className="text-[9px] text-[#6B7280] font-mono truncate">{acc.email} | PW: {acc.password}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => fillCredentials(acc)}
-                  className="px-2 py-1 border border-gray-200 hover:border-[#FF5A1F] bg-white text-[#111111] hover:text-[#FF5A1F] rounded text-[9px] font-bold transition-all cursor-pointer flex-shrink-0"
-                >
-                  Use Account
-                </button>
+            {/* Security Footer */}
+            <div className="mt-auto pt-4 border-t border-[#ECECEC] flex justify-between items-center text-[10px] text-[#8E8E8E]">
+              <div className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5" />
+                <span>Protected Access</span>
               </div>
-            );
-          })}
+              <div className="flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Encrypted Sessions</span>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>

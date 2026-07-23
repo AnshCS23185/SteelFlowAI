@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.material_request import MaterialRequest
+from app.models import MaterialRequest
 from app.repositories.base import BaseRepository
 from uuid import UUID
 from typing import List

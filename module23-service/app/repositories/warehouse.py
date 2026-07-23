@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.warehouse import Warehouse
+from app.models import Warehouse
 from app.repositories.base import BaseRepository
 
 class WarehouseRepository(BaseRepository[Warehouse]):

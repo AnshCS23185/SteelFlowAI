@@ -8,35 +8,46 @@ const api = axios.create({
   },
 });
 
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+// Module 23 (Inventory) is on port 8002
+const inventoryApi = axios.create({
+  baseURL: 'http://localhost:8002/inventory',
+  headers: {
+    'Content-Type': 'application/json',
   },
-  (error) => Promise.reject(error)
-);
+});
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear all auth state to prevent ghost sessions
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('steelflow-user');
-      sessionStorage.removeItem('role');
-      sessionStorage.removeItem('email');
-      sessionStorage.removeItem('name');
-      
-      // Force redirect to login page if we aren't already there
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+[api, inventoryApi].forEach(instance => {
+  instance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
-    }
-    return Promise.reject(error);
-  }
-);
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
 
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response && error.response.status === 401) {
+        // Clear all auth state to prevent ghost sessions
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('steelflow-user');
+        sessionStorage.removeItem('role');
+        sessionStorage.removeItem('email');
+        sessionStorage.removeItem('name');
+        
+        // Force redirect to login page if we aren't already there
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+});
+
+export { inventoryApi };
 export default api;

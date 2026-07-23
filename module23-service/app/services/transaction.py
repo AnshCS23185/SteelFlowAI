@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.repositories.inventory_transaction import InventoryTransactionRepository
-from app.models.inventory_transaction import InventoryTransaction
+from app.models import InventoryTransaction
 from uuid import UUID
 from typing import List
 

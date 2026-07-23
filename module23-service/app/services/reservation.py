@@ -3,10 +3,10 @@ from app.repositories.reservation import ReservationRepository
 from app.repositories.inventory_stock import InventoryStockRepository
 from app.repositories.inventory_transaction import InventoryTransactionRepository
 from app.repositories.material_request import MaterialRequestRepository
-from app.models.reservation import MaterialReservation
-from app.models.inventory_stock import InventoryStock
-from app.models.inventory_transaction import InventoryTransaction
-from app.models.material_request import MaterialRequest
+from app.models import MaterialReservation
+from app.models import Inventory
+from app.models import InventoryTransaction
+from app.models import MaterialRequest
 from app.schemas.schemas import MaterialReservationCreate
 from uuid import UUID
 from typing import List, Optional
@@ -33,8 +33,8 @@ class ReservationService:
         stock = self.stock_repo.get_stock(schema.material_id, schema.warehouse_id)
         
         # Calculate available quantity
-        current = stock.current_stock if stock else 0.0
-        reserved = stock.reserved_stock if stock else 0.0
+        current = stock.available_quantity if stock else 0.0
+        reserved = stock.reserved_quantity if stock else 0.0
         issued = stock.issued_stock if stock else 0.0
         available = current - reserved - issued
         
@@ -42,7 +42,7 @@ class ReservationService:
         
         if stock and available >= needed_qty:
             # Enough Stock
-            stock.reserved_stock += needed_qty
+            stock.reserved_quantity += needed_qty
             self.stock_repo.update()
             
             res_number = f"RES-{uuid.uuid4().hex[:8].upper()}"
@@ -65,8 +65,8 @@ class ReservationService:
                 material_id=schema.material_id,
                 warehouse_id=schema.warehouse_id,
                 quantity=needed_qty,
-                created_by=schema.reserved_by,
-                description=f"Reserved {needed_qty} units for project {schema.project_id or 'N/A'}"
+                performed_by=schema.reserved_by,
+                remarks=f"Reserved {needed_qty} units for project {schema.project_id or 'N/A'}"
             )
             self.tx_repo.create(tx)
             
@@ -91,7 +91,7 @@ class ReservationService:
                 shortage_quantity=shortage,
                 approved_quantity=0.0,
                 status="Pending",
-                created_by=schema.reserved_by
+                performed_by=schema.reserved_by
             )
             self.req_repo.create(req)
             
@@ -100,7 +100,7 @@ class ReservationService:
             res = None
             if stock and available > 0:
                 partial_reserved = available
-                stock.reserved_stock += partial_reserved
+                stock.reserved_quantity += partial_reserved
                 self.stock_repo.update()
                 
                 res_number = f"RES-{uuid.uuid4().hex[:8].upper()}"
@@ -123,8 +123,8 @@ class ReservationService:
                     material_id=schema.material_id,
                     warehouse_id=schema.warehouse_id,
                     quantity=partial_reserved,
-                    created_by=schema.reserved_by,
-                    description=f"Partially reserved {partial_reserved} units (Shortage: {shortage}) for project {schema.project_id or 'N/A'}"
+                    performed_by=schema.reserved_by,
+                    remarks=f"Partially reserved {partial_reserved} units (Shortage: {shortage}) for project {schema.project_id or 'N/A'}"
                 )
                 self.tx_repo.create(tx)
                 
@@ -143,7 +143,7 @@ class ReservationService:
         stock = self.stock_repo.get_stock(res.material_id, res.warehouse_id)
         if stock:
             # Decrease reserved stock
-            stock.reserved_stock = max(0.0, stock.reserved_stock - res.reserved_quantity)
+            stock.reserved_quantity = max(0.0, stock.reserved_quantity - res.reserved_quantity)
             self.stock_repo.update()
             
         res.status = "Released"
@@ -157,9 +157,10 @@ class ReservationService:
             material_id=res.material_id,
             warehouse_id=res.warehouse_id,
             quantity=-res.reserved_quantity,
-            created_by=res.reserved_by,
-            description=f"Released reservation {res.reservation_number}. Qty: {res.reserved_quantity}"
+            performed_by=res.reserved_by,
+            remarks=f"Released reservation {res.reservation_number}. Qty: {res.reserved_quantity}"
         )
         self.tx_repo.create(tx)
         
         return True
+

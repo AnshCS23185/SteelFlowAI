@@ -2,11 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from steelflow_db.core.db import get_db
 from app.services.inventory import InventoryService
-from app.schemas.schemas import InventoryStockResponse
+from app.schemas.schemas import InventoryStockResponse, InventoryDashboardResponse
 from uuid import UUID
 from typing import List, Optional
 
-router = APIRouter(prefix="/inventory", tags=["Inventory"])
+router = APIRouter(prefix="", tags=["Inventory"])
+
+@router.get("/dashboard", response_model=InventoryDashboardResponse)
+def get_inventory_dashboard(db: Session = Depends(get_db)):
+    service = InventoryService(db)
+    return service.get_dashboard_summary()
 
 @router.get("", response_model=List[InventoryStockResponse])
 def get_inventory(db: Session = Depends(get_db)):
